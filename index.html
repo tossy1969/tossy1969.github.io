@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中野新橋駅 フラップサイネージ</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #1a1a1a;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .signage {
+            background-color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            border-top: 5px solid #ff0000;
+            width: 800px;
+        }
+        .signage[lang="ja"] {
+            font-family: 'Yu Gothic', 'MS Gothic', sans-serif;
+        }
+        .signage[lang="en"] {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+        }
+        .title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 20px;
+            height: 30px;
+            line-height: 30px;
+        }
+        .table {
+            display: grid;
+            gap: 5px;
+        }
+        .row {
+            display: grid;
+            grid-template-columns: 50px repeat(4, 1fr);
+            gap: 5px;
+            min-height: 40px;
+        }
+        .header {
+            color: #fff;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 2.5px;
+        }
+        .flap {
+            width: 150px;
+            height: 40px;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #444;
+            text-align: center;
+        }
+        .flap[id^="time-"] {
+            font-size: 20px;
+            font-family: 'Helvetica', 'Arial', sans-serif;
+        }
+        .flap.status {
+            width: 50px;
+            font-size: 24px;
+        }
+        .flap span {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+            text-align: center;
+        }
+        .flap span.next {
+            transform: translateY(-100%);
+        }
+        .flap span.current {
+            transform: translateY(0);
+        }
+        .flap span.prev {
+            transform: translateY(100%);
+        }
+        .status.grey span {
+            color: #999;
+        }
+        .status.orange span {
+            color: #ff6200;
+        }
+        .status.blink span {
+            animation: blink 1.5s ease-in-out infinite;
+        }
+        .row.alert .flap {
+            background-color: #ff0000;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        #debug-log {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: #fff;
+            color: #000;
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: scroll;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="signage" lang="ja">
+        <div class="title" id="title"><span class="current">Ⓜ MB05 丸ノ内線・中野新橋駅出発</span></div>
+        <div class="table">
+            <div class="row">
+                <div class="header"></div>
+                <div class="header">Time</div>
+                <div class="header">Destination</div>
+                <div class="header">Train Type</div>
+                <div class="header">Remarks</div>
+            </div>
+            <div class="row" id="row-0">
+                <div class="flap status" id="status-0"><span class="current">●</span></div>
+                <div class="flap" id="time-0"><span class="current">12:10</span></div>
+                <div class="flap" id="destination-0"><span class="current">方南町</span></div>
+                <div class="flap" id="train-type-0"><span class="current">各駅停車</span></div>
+                <div class="flap" id="remarks-0"><span class="current">定刻</span></div>
+            </div>
+            <div class="row" id="row-1">
+                <div class="flap status" id="status-1"><span class="current">●</span></div>
+                <div class="flap" id="time-1"><span class="current">12:15</span></div>
+                <div class="flap" id="destination-1"><span class="current">中野坂上</span></div>
+                <div class="flap" id="train-type-1"><span class="current">各駅停車</span></div>
+                <div class="flap" id="remarks-1"><span class="current">⚠ 人身事故</span></div>
+            </div>
+            <div class="row" id="row-2">
+                <div class="flap status" id="status-2"><span class="current">●</span></div>
+                <div class="flap" id="time-2"><span class="current">12:20</span></div>
+                <div class="flap" id="destination-2"><span class="current">方南町</span></div>
+                <div class="flap" id="train-type-2"><span class="current">各駅停車</span></div>
+                <div class="flap" id="remarks-2"><span class="current">定刻</span></div>
+            </div>
+            <div class="row" id="row-3">
+                <div class="flap status" id="status-3"><span class="current">●</span></div>
+                <div class="flap" id="time-3"><span class="current">12:25</span></div>
+                <div class="flap" id="destination-3"><span class="current">中野坂上</span></div>
+                <div class="flap" id="train-type-3"><span class="current">各駅停車</span></div>
+                <div class="flap" id="remarks-3"><span class="current">定刻</span></div>
+            </div>
+            <div class="row" id="row-4">
+                <div class="flap status" id="status-4"><span class="current">●</span></div>
+                <div class="flap" id="time-4"><span class="current">12:30</span></div>
+                <div class="flap" id="destination-4"><span class="current">方南町</span></div>
+                <div class="flap" id="train-type-4"><span class="current">各駅停車</span></div>
+                <div class="flap" id="remarks-4"><span class="current">定刻</span></div>
+            </div>
+            <div class="row" id="row-5">
+                <div class="flap status" id="status-5"><span class="current">●</span></div>
+                <div class="flap" id="time-5"><span class="current">12:35</span></div>
+                <div class="flap" id="destination-5"><span class="current">中野坂上</span></div>
+                <div class="flap" id="train-type-5"><span class="current">各駅停車</span></div>
+                <div class="flap" id="remarks-5"><span class="current">定刻</span></div>
+            </div>
+        </div>
+    </div>
+    <div id="debug-log"></div>
+
+    <script>
+        // フォールバックデータ（APIエラー時用）
+        const fallbackData = [
+            {
+                time: { ja: "12:10", en: "12:10" },
+                destination: { ja: "方南町", en: "Hōnanchō" },
+                trainType: { ja: "各駅停車", en: "Local" },
+                remarks: { ja: "定刻", en: "On Time" },
+                departureTime: "2025-04-19T12:10:00+09:00",
+                hasPersonalInjury: false
+            },
+            {
+                time: { ja: "12:15", en: "12:15" },
+                destination: { ja: "中野坂上", en: "Nakano-Sakaue" },
+                trainType: { ja: "各駅停車", en: "Local" },
+                remarks: { ja: "⚠ 人身事故", en: "⚠ Personal Injury" },
+                departureTime: "2025-04-19T12:15:00+09:00",
+                hasPersonalInjury: true
+            },
+            {
+                time: { ja: "12:20", en: "12:20" },
+                destination: { ja: "方南町", en: "Hōnanchō" },
+                trainType: { ja: "各駅停車", en: "Local" },
+                remarks: { ja: "定刻", en: "On Time" },
+                departureTime: "2025-04-19T12:20:00+09:00",
+                hasPersonalInjury: false
+            },
+            {
+                time: { ja: "12:25", en: "12:25" },
+                destination: { ja: "中野坂上", en: "Nakano-Sakaue" },
+                trainType: { ja: "各駅停車", en: "Local" },
+                remarks: { ja: "定刻", en: "On Time" },
+                departureTime: "2025-04-19T12:25:00+09:00",
+                hasPersonalInjury: false
+            },
+            {
+                time: { ja: "12:30", en: "12:30" },
+                destination: { ja: "方南町", en: "Hōnanchō" },
+                trainType: { ja: "各駅停車", en: "Local" },
+                remarks: { ja: "定刻", en: "On Time" },
+                departureTime: "2025-04-19T12:30:00+09:00",
+                hasPersonalInjury: false
+            },
+            {
+                time: { ja: "12:35", en: "12:35" },
+                destination: { ja: "中野坂上", en: "Nakano-Sakaue" },
+                trainType: { ja: "各駅停車", en: "Local" },
+                remarks: { ja: "定刻", en: "On Time" },
+                departureTime: "2025-04-19T12:35:00+09:00",
+                hasPersonalInjury: false
+            }
+        ];
+
+        const titleData = {
+            ja: "Ⓜ MB05 丸ノ内線・中野新橋駅出発",
+            en: "Ⓜ MB05 NAKANO-SHIMBASHI DEPARTURES"
+        };
+
+        let isJapanese = true;
+        let data = fallbackData;
+
+        // 画面ログ出力
+        function logToScreen(message) {
+            const debugLog = document.getElementById('debug-log');
+            debugLog.innerHTML += `<p>${new Date().toISOString()}: ${message}</p>`;
+            debugLog.scrollTop = debugLog.scrollHeight;
+        }
+
+        // APIからリアルタイムデータを取得
+        async function fetchTrainData() {
+            const apiKey = 'yjz1o1qfnro1og8dqpjhhme045c212o4ma6pxszots8zrfcus3v9x3l8977hm7mw'; // 新しいアクセストークンに置き換え
+            const useTimetable = false; // true にすると odpt:StationTimetable を使用
+            const url = useTimetable
+                ? `https://api.odpt.org/api/v4/datapoints/odpt:StationTimetable?odpt:station=odpt.Station:TokyoMetro.Marunouchi.NakanoShimbashi&acl:consumerKey=${apiKey}`
+                : `https://api.odpt.org/api/v4/datapoints/odpt:Train?odpt:railway=odpt.Railway:TokyoMetro.Marunouchi&odpt:station=odpt.Station:TokyoMetro.Marunouchi.NakanoShimbashi&acl:consumerKey=${apiKey}`;
+            
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    const error = `API request failed: ${response.status} ${response.statusText}`;
+                    logToScreen(error);
+                    throw new Error(error);
+                }
+                const trains = await response.json();
+                logToScreen(`Raw API response: ${JSON.stringify(trains).substring(0, 200)}...`);
+
+                const now = new Date();
+                // const now = new Date('2025-04-20T12:00:00+09:00'); // テスト用
+                const newData = [];
+                let count = 0;
+
+                if (useTimetable) {
+                    // odpt:StationTimetable の処理（時刻表）
+                    for (const timetable of trains) {
+                        const timetableObjects = timetable['odpt:stationTimetableObject'] || [];
+                        for (const entry of timetableObjects) {
+                            if (count >= 6) break;
+
+                            const departureTimeStr = entry['odpt:departureTime']; // 例: "12:10"
+                            if (!departureTimeStr) continue;
+
+                            // 今日の日付に時刻を適用
+                            const [hours, minutes] = departureTimeStr.split(':').map(Number);
+                            const departureTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+                            if (departureTime < now) {
+                                // 翌日の可能性を考慮
+                                departureTime.setDate(departureTime.getDate() + 1);
+                            }
+
+                            // 遅延や人身事故は odpt:TrainInformation で別途取得が必要
+                            const hasPersonalInjury = false; // 仮：後で TrainInformation と統合
+                            const remarksJa = hasPersonalInjury ? '⚠ 人身事故' : '定刻';
+                            const remarksEn = hasPersonalInjury ? '⚠ Personal Injury' : 'On Time';
+
+                            newData.push({
+                                time: {
+                                    ja: departureTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+                                    en: departureTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+                                },
+                                destination: {
+                                    ja: entry['odpt:destinationStation'] === 'TokyoMetro.Marunouchi.Honancho' ? '方南町' : '中野坂上',
+                                    en: entry['odpt:destinationStation'] === 'TokyoMetro.Marunouchi.Honancho' ? 'Hōnanchō' : 'Nakano-Sakaue'
+                                },
+                                trainType: {
+                                    ja: '各駅停車',
+                                    en: 'Local'
+                                },
+                                remarks: { ja: remarksJa, en: remarksEn },
+                                departureTime: departureTime.toISOString(),
+                                hasPersonalInjury
+                            });
+
+                            count++;
+                        }
+                    }
+                } else {
+                    // odpt:Train の処理（既存）
+                    for (const train of trains) {
+                        if (count >= 6) break;
+
+                        console.log(`Train ${count}:`, train);
+
+                        const departureTime = new Date(train['odpt:departureTime']);
+                        if (isNaN(departureTime) || departureTime < now) {
+                            logToScreen(`Invalid or past departure time: ${train['odpt:departureTime']}`);
+                            continue;
+                        }
+
+                        const delay = train['odpt:delay'] || 0;
+                        const status = train['odpt:trainStatus'] || 'Normal';
+                        const cause = train['odpt:cause'] || '';
+                        const hasPersonalInjury = cause === 'Personal injury';
+                        let remarksJa = hasPersonalInjury ? '⚠ 人身事故' : '定刻';
+                        let remarksEn = hasPersonalInjury ? '⚠ Personal Injury' : 'On Time';
+
+                        if (status === 'Cancelled' && !hasPersonalInjury) {
+                            remarksJa = '運休';
+                            remarksEn = 'Cancelled';
+                        } else if (delay > 0 && !hasPersonalInjury) {
+                            remarksJa = `遅延${delay}分`;
+                            remarksEn = `Delayed ${delay}min`;
+                        }
+
+                        newData.push({
+                            time: {
+                                ja: departureTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+                                en: departureTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+                            },
+                            destination: {
+                                ja: train['odpt:destinationStation'] === 'TokyoMetro.Marunouchi.Honancho' ? '方南町' : '中野坂上',
+                                en: train['odpt:destinationStation'] === 'TokyoMetro.Marunouchi.Honancho' ? 'Hōnanchō' : 'Nakano-Sakaue'
+                            },
+                            trainType: {
+                                ja: '各駅停車',
+                                en: 'Local'
+                            },
+                            remarks: { ja: remarksJa, en: remarksEn },
+                            departureTime: departureTime.toISOString(),
+                            hasPersonalInjury
+                        });
+
+                        count++;
+                    }
+                }
+
+                if (newData.length > 0) {
+                    data = newData;
+                    logToScreen(`Fetched new train data: ${JSON.stringify(data[0])}`);
+                } else {
+                    logToScreen('No upcoming trains found, using fallback data');
+                    data = fallbackData;
+                }
+            } catch (error) {
+                logToScreen(`Error fetching train data: ${error.message}`);
+                console.error('Error fetching train data:', error);
+                data = fallbackData;
+            }
+
+            updatePersonalInjuryAlerts();
+        }
+
+        // 人身事故アラートを更新
+        function updatePersonalInjuryAlerts() {
+            data.forEach((train, index) => {
+                const row = document.getElementById(`row-${index}`);
+                if (train.hasPersonalInjury) {
+                    row.classList.add('alert');
+                    logToScreen(`Added alert to row-${index}: Personal Injury`);
+                } else {
+                    row.classList.remove('alert');
+                }
+            });
+        }
+
+        // 丸印の状態を更新
+        function updateStatusIndicators() {
+            const now = new Date();
+            // const now = new Date('2025-04-19T11:00:00+09:00'); // 非点滅確認用
+            const currentTime = now.getTime();
+
+            data.forEach((train, index) => {
+                const statusFlap = document.getElementById(`status-${index}`);
+                const departureTime = new Date(train.departureTime);
+                const timeDiff = (departureTime.getTime() - currentTime) / 1000 / 60;
+
+                statusFlap.classList.remove('grey', 'orange', 'blink');
+
+                if (timeDiff > 30) {
+                    statusFlap.classList.add('grey');
+                    logToScreen(`Status-${index}: Grey (>30min, ${timeDiff.toFixed(1)}min)`);
+                } else if (timeDiff > 20) {
+                    statusFlap.classList.add('orange');
+                    logToScreen(`Status-${index}: Orange (20-30min, ${timeDiff.toFixed(1)}min)`);
+                } else {
+                    statusFlap.classList.add('orange', 'blink');
+                    logToScreen(`Status-${index}: Orange Blink (≤20min, ${timeDiff.toFixed(1)}min)`);
+                }
+            });
+        }
+
+        // フラップ更新
+        function updateFlap(flap, newText) {
+            const spans = flap.querySelectorAll('span');
+            spans.forEach(span => flap.removeChild(span));
+
+            const next = document.createElement('span');
+            next.className = 'next';
+            next.textContent = newText;
+            flap.appendChild(next);
+            return { flap, next };
+        }
+
+        // 日本語/英語切り替え
+        function updateSignage() {
+            const lang = isJapanese ? 'ja' : 'en';
+            logToScreen(`Switching to ${lang}`);
+
+            document.querySelector('.signage').setAttribute('lang', lang);
+
+            const updates = [];
+            const titleFlap = document.getElementById('title');
+            updates.push(updateFlap(titleFlap, titleData[lang]));
+
+            data.forEach((train, index) => {
+                updates.push(updateFlap(document.getElementById(`time-${index}`), train.time[lang]));
+                updates.push(updateFlap(document.getElementById(`destination-${index}`), train.destination[lang]));
+                updates.push(updateFlap(document.getElementById(`train-type-${index}`), train.trainType[lang]));
+                updates.push(updateFlap(document.getElementById(`remarks-${index}`), train.remarks[lang]));
+            });
+
+            requestAnimationFrame(() => {
+                updates.forEach(({ flap, next }) => {
+                    next.className = 'current';
+                    logToScreen(`Updated ${flap.id} to ${next.textContent}`);
+                });
+            });
+
+            isJapanese = !isJapanese;
+        }
+
+        // 初期化と定期更新
+        async function initialize() {
+            await fetchTrainData();
+            updateSignage();
+            updateStatusIndicators();
+
+            setInterval(updateSignage, 5000);
+            setInterval(updateStatusIndicators, 1000);
+            setInterval(fetchTrainData, 60000);
+        }
+
+        initialize();
+    </script>
+</body>
+</html>
