@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中野新橋駅 丸ノ内線 発車サイネージ</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .signage {
+            background-color: #1a1a1a;
+            padding: 20px;
+            border-radius: 10px;
+            width: 800px;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        }
+        .header {
+            background-color: #ff0000;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 5px;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .table th, .table td {
+            border: 1px solid #fff;
+            padding: 10px;
+            text-align: center;
+            font-size: 18px;
+        }
+        .table th {
+            background-color: #333;
+        }
+        .error {
+            color: #ff5555;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="signage">
+        <div class="header">中野新橋駅 丸ノ内線 発車案内</div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>発車時刻</th>
+                    <th>行先</th>
+                    <th>種別</th>
+                </tr>
+            </thead>
+            <tbody id="timetable"></tbody>
+        </table>
+        <div id="error" class="error"></div>
+    </div>
+
+    <script>
+        const API_KEY = '8p497tblgysgohmtt1mhb13mgmfubdt0flgxw3u6bjpmrdz03t15g5pcslv7qh9l'; // 最新のAPIキーをここに設定
+        const STATION_CODE = 'odpt:Station:TokyoMetro.Marunouchi.NakanoShimbashi';
+        const API_URL = `https://api.tokyometroapp.jp/api/v2/datapoints?rdf:type=odpt:TrainTimetable&odpt:station=${STATION_CODE}&acl:consumerKey=${API_KEY}`;
+
+        // 行き先の日本語名マッピング（APIの駅コードを日本語に変換）
+        const destinationMap = {
+            'odpt:Station:TokyoMetro.Marunouchi.Ikebukuro': '池袋',
+            'odpt:Station:TokyoMetro.Marunouchi.Ogikubo': '荻窪',
+            'odpt:Station:TokyoMetro.Marunouchi.Honancho': '方南町'
+        };
+
+        // 種別の日本語名マッピング
+        const trainTypeMap = {
+            'odpt:TrainType:TokyoMetro.Local': '各停',
+            'odpt:TrainType:TokyoMetro.Express': '急行'
+        };
+
+        // データを取得してテーブルを更新
+        async function updateTimetable() {
+            const tbody = document.getElementById('timetable');
+            const errorDiv = document.getElementById('error');
+            tbody.innerHTML = ''; // 既存データをクリア
+            errorDiv.textContent = '';
+
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error('APIリクエストに失敗しました');
+
+                const data = await response.json();
+                if (!data || data.length === 0) throw new Error('データが取得できませんでした');
+
+                // 発車時刻と行き先を抽出（例：直近の10件を表示）
+                let timetable = [];
+                data.forEach(timetableObj => {
+                    const departures = timetableObj['odpt:trainTimetableObject'] || [];
+                    departures.forEach(dep => {
+                        if (dep['odpt:departureStation'] === STATION_CODE) {
+                            timetable.push({
+                                time: dep['odpt:departureTime'],
+                                destination: destinationMap[dep['odpt:destinationStation']] || '不明',
+                                type: trainTypeMap[timetableObj['odpt:trainType']] || '不明'
+                            });
+                        }
+                    });
+                });
+
+                // 時刻順にソート
+                timetable.sort((a, b) => a.time.localeCompare(b.time));
+
+                // 直近の5件を表示
+                timetable.slice(0, 5).forEach(data => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${data.time}</td>
+                        <td>${data.destination}</td>
+                        <td>${data.type}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                if (timetable.length === 0) {
+                    errorDiv.textContent = '該当する発車データがありません';
+                }
+            } catch (error) {
+                errorDiv.textContent = `エラー: ${error.message}`;
+            }
+        }
+
+        // 初回更新
+        updateTimetable();
+
+        // 30秒ごとに更新
+        setInterval(updateTimetable, 30000);
+    </script>
+</body>
+</html>
