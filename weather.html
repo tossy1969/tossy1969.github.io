@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>東京中野 24時間天気予報</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #e0e0e0; /* 薄いグレーに変更 */
+            background-color: #e0e0e0; /* 薄いグレー */
             margin: 0;
             padding: 10px;
             display: flex;
@@ -36,6 +39,12 @@
             width: 180px;
             height: 180px;
             margin: 0 auto;
+        }
+        /* 雲アイコンのグレーを濃くする */
+        td[data-weather="02d"] img.weather-icon,
+        td[data-weather="03d"] img.weather-icon,
+        td[data-weather="04d"] img.weather-icon {
+            filter: contrast(1.2) brightness(0.9); /* コントラストUP、明るさ微減 */
         }
         .time {
             font-size: 2.8em;
@@ -102,6 +111,9 @@
     </table>
 
     <script>
+        // バージョン確認用ログ
+        console.log("Version: 1.0.1");
+
         // 現在時刻を取得し、次の「3時間ごとの時刻」に揃える
         const now = new Date();
         const hours = now.getHours();
@@ -159,8 +171,9 @@
             99: '11d'  // 雷雨（強い雹）
         };
 
-        // Open-Meteo APIで天気データを取得
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=35.7076&longitude=139.6637&hourly=weathercode&timezone=Asia%2FTokyo&forecast_days=1`;
+        // Open-Meteo APIで天気データを取得（タイムスタンプでキャッシュ回避）
+        const timestamp = Date.now();
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=35.7076&longitude=139.6637&hourly=weathercode&timezone=Asia%2FTokyo&forecast_days=1&t=${timestamp}`;
         fetch(url)
             .then(response => response.json())
             .then(data => {
@@ -190,7 +203,7 @@
                         console.log(`セル${index}: WMOコード=${item.weathercode}, アイコン=${icon}`); // デバッグ用
                         const time = item.time;
                         const hours = time.getHours().toString().padStart(2, '0');
-                        cell.querySelector('img').src = `https://openweathermap.org/img/wn/${icon}@2x.png`;
+                        cell.querySelector('img').src = `https://openweathermap.org/img/wn/${icon}@2x.png?t=${timestamp}`;
                         cell.querySelector('img').alt = item.weathercode in weatherCodeMap ? '天気' : '不明';
                         cell.querySelector('.time').textContent = `${hours}:00`;
                         cell.setAttribute('data-weather', icon);
