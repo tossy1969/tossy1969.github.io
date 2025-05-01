@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Content Switcher</title>
+    <script>
+        function updateContent() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const time = hours * 60 + minutes; // 現在の時間を分単位で計算
+            const iframe = document.getElementById('contentFrame');
+
+            // 0:30から4:30の時間帯 (30分から270分)
+            if (time >= 30 && time < 270) {
+                iframe.src = 'weather.html';
+                // 30分後にリロード (30分 = 1800000ミリ秒)
+                setTimeout(() => location.reload(), 1800000);
+            } else {
+                // 10秒ごとにweather.htmlとmetro.htmlを切り替え
+                const isWeather = (Math.floor(Date.now() / 10000) % 2) === 0;
+                iframe.src = isWeather ? 'weather.html' : 'metro.html';
+                // 10秒後にリロード (10秒 = 10000ミリ秒)
+                setTimeout(() => location.reload(), 10000);
+            }
+        }
+
+        // ページ読み込み時に即時実行
+        window.onload = updateContent;
+    </script>
+</head>
+<body>
+    <iframe id="contentFrame" src="" style="width: 100%; height: 100vh; border: none;"></iframe>
+</body>
+</html>
