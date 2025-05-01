@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>東京中野 8時間天気予報</title>
+    <title>東京中野 24時間天気予報</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -110,6 +110,7 @@
 
         // 背景色を設定する関数
         function setBackgroundColor(cell, icon) {
+            console.log(`背景色設定: セル=${cell.querySelector('.time').textContent}, アイコン=${icon}`); // デバッグ用
             if (['01d', '01n'].includes(icon)) {
                 cell.style.backgroundColor = '#f39c12'; // 晴れ：オレンジ
                 cell.querySelector('.time').style.color = '#fff';
