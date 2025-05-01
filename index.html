@@ -49,11 +49,11 @@
             let isWeather = true;
             frame.src = 'weather.html';
 
-            // 10秒ごとに切り替え (10秒 = 10000ミリ秒)
+            // 10秒ごとに切り替え (15秒 = 15000ミリ秒)
             setInterval(() => {
                 isWeather = !isWeather;
                 frame.src = isWeather ? 'weather.html' : 'metro.html';
-            }, 10000);
+            }, 15000);
         }
 
         // 初期実行
