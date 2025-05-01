@@ -3,34 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic Content Switcher</title>
+    <title>Dynamic Display</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: black;
+            overflow: hidden;
+        }
+        iframe {
+            width: 100vw;
+            height: 100vh;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <iframe id="displayFrame" src="weather.html"></iframe>
+
     <script>
-        function updateContent() {
+        const frame = document.getElementById('displayFrame');
+
+        function getCurrentTime() {
             const now = new Date();
             const hours = now.getHours();
             const minutes = now.getMinutes();
-            const time = hours * 60 + minutes; // 現在の時間を分単位で計算
-            const iframe = document.getElementById('contentFrame');
-
-            // 0:30から4:30の時間帯 (30分から270分)
-            if (time >= 30 && time < 270) {
-                iframe.src = 'weather.html';
-                // 30分後にリロード (30分 = 1800000ミリ秒)
-                setTimeout(() => location.reload(), 1800000);
-            } else {
-                // 10秒ごとにweather.htmlとmetro.htmlを切り替え
-                const isWeather = (Math.floor(Date.now() / 10000) % 2) === 0;
-                iframe.src = isWeather ? 'weather.html' : 'metro.html';
-                // 10秒後にリロード (10秒 = 10000ミリ秒)
-                setTimeout(() => location.reload(), 10000);
-            }
+            return hours + minutes / 60;
         }
 
-        // ページ読み込み時に即時実行
-        window.onload = updateContent;
+        function isNightTime() {
+            const time = getCurrentTime();
+            // 0:30 (0.5) から 4:30 (4.5) の時間帯をチェック
+            return time >= 0.5 && time < 4.5;
+        }
+
+        function showWeatherOnly() {
+            frame.src = 'weather.html';
+            // 30分ごとにリロード (30分 = 1800000ミリ秒)
+            setInterval(() => {
+                frame.src = 'weather.html';
+            }, 1800000);
+        }
+
+        function togglePages() {
+            let isWeather = true;
+            frame.src = 'weather.html';
+
+            // 10秒ごとに切り替え (10秒 = 10000ミリ秒)
+            setInterval(() => {
+                isWeather = !isWeather;
+                frame.src = isWeather ? 'weather.html' : 'metro.html';
+            }, 10000);
+        }
+
+        // 初期実行
+        if (isNightTime()) {
+            showWeatherOnly();
+        } else {
+            togglePages();
+        }
+
+        // 時間帯の変化をチェック（1分ごとに確認）
+        setInterval(() => {
+            location.reload(); // 時間帯が変わったらページをリロードしてロジックを再評価
+        }, 60000);
     </script>
-</head>
-<body>
-    <iframe id="contentFrame" src="" style="width: 100%; height: 100vh; border: none;"></iframe>
 </body>
 </html>
