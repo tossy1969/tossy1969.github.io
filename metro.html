@@ -536,33 +536,6 @@
             }
         }
 
-        // 音声再生機能
-        const ringAudio = new Audio('/ring.mp3');
-        function playRing() {
-            const now = new Date();
-            const hours = now.getHours();
-            const minutes = now.getMinutes();
-            const seconds = now.getSeconds();
-
-            if (hours >= 8 && hours <= 23 && minutes === 0 && seconds <= 5) {
-                console.log('Playing ring at:', now.toISOString());
-                forcePlayAudio();
-            }
-        }
-
-        // 音声を強制再生
-        function forcePlayAudio() {
-            const playPromise = ringAudio.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    console.error('Error playing ring:', error);
-                    setTimeout(() => {
-                        ringAudio.play().catch(err => console.error('Retry failed:', err));
-                    }, 1000);
-                });
-            }
-        }
-
         // データと表示を更新
         function updateAll() {
             try {
