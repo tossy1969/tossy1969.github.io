@@ -25,12 +25,13 @@
     <audio id="ringAudio" src="ring.mp3"></audio>
 
     <script>
-        console.log("index.html読み込み: Version 1.0.6");
+        console.log("index.html読み込み: Version 1.0.7");
         const frame = document.getElementById('displayFrame');
         const audio = document.getElementById('ringAudio');
-        let isWeatherOnly = false;
+        let isClockOnly = false;
         let currentIndex = 0;
-        const pages = ['/weather.html', '/metro.html'];
+        const pages = ['/weather.html', '/clock.html', '/metro.html'];
+        const displayDurations = [20000, 3000, 20000]; // 20秒, 3秒, 20秒
         const ringTimes = ['09:00', '12:00', '15:00', '18:00', '21:00'];
 
         // 現在の時間を取得
@@ -44,7 +45,7 @@
         }
 
         // 0:30〜4:30の時間帯かどうかを判定
-        function isWeatherOnlyTime() {
+        function isClockOnlyTime() {
             const { hours, minutes } = getCurrentTime();
             const totalMinutes = hours * 60 + minutes;
             const start = 0 * 60 + 30; // 0:30
@@ -52,30 +53,42 @@
             return totalMinutes >= start && totalMinutes < end;
         }
 
-        // ページ切り替え処理
-        function switchPage() {
-            const timestamp = Date.now();
-            if (isWeatherOnly) {
-                frame.src = `/weather.html?t=${timestamp}`;
-            } else {
-                currentIndex = (currentIndex + 1) % pages.length;
-                frame.src = `${pages[currentIndex]}?t=${timestamp}`;
-            }
-            console.log(`ページ切り替え: ${frame.src}`);
+        // 指定時間待機するユーティリティ
+        function wait(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
         }
 
-        // 時間帯のチェックとリロード間隔の設定
-        function checkTimeAndReload() {
-            isWeatherOnly = isWeatherOnlyTime();
-            const reloadInterval = isWeatherOnly ? 30 * 60 * 1000 : 60 * 1000; // 30分 or 60秒
-            setTimeout(checkTimeAndReload, reloadInterval);
-            if (isWeatherOnly) {
+        // ページ切り替え処理
+        async function switchPage() {
+            if (isClockOnly) {
                 const timestamp = Date.now();
-                frame.src = `/weather.html?t=${timestamp}`;
-                console.log(`Weather専用時間帯: ${frame.src}`);
-            } else {
+                frame.src = `/clock.html?t=${timestamp}`;
+                console.log(`Clock専用時間帯: ${frame.src}`);
+                return;
+            }
+            currentIndex = (currentIndex + 1) % pages.length;
+            const timestamp = Date.now();
+            frame.src = `${pages[currentIndex]}?t=${timestamp}`;
+            console.log(`ページ切り替え: ${frame.src}, 表示時間: ${displayDurations[currentIndex]}ms`);
+            await wait(displayDurations[currentIndex]);
+            switchPage(); // 次のページへ
+        }
+
+        // 時間帯のチェック
+        function checkTime() {
+            const wasClockOnly = isClockOnly;
+            isClockOnly = isClockOnlyTime();
+            if (isClockOnly && !wasClockOnly) {
+                // 0:30〜4:30に入った場合、clock.htmlを即時設定
+                const timestamp = Date.now();
+                frame.src = `/clock.html?t=${timestamp}`;
+                console.log(`Clock専用時間帯開始: ${frame.src}`);
+            } else if (!isClockOnly && wasClockOnly) {
+                // 0:30〜4:30から抜けた場合、切り替え再開
+                currentIndex = -1; // 最初から
                 switchPage();
             }
+            setTimeout(checkTime, 60 * 1000); // 1分ごとにチェック
         }
 
         // ring.mp3の再生チェック
@@ -89,13 +102,17 @@
         // 初期化
         function init() {
             // 初回時間帯チェック
-            isWeatherOnly = isWeatherOnlyTime();
+            isClockOnly = isClockOnlyTime();
             // 初回ページ設定
             const timestamp = Date.now();
-            frame.src = isWeatherOnly ? `/weather.html?t=${timestamp}` : `${pages[currentIndex]}?t=${timestamp}`;
+            frame.src = isClockOnly ? `/clock.html?t=${timestamp}` : `/weather.html?t=${timestamp}`;
             console.log(`初期ページ: ${frame.src}`);
-            // ページ切り替え開始
-            checkTimeAndReload();
+            // ページ切り替え開始（非Clock時間帯のみ）
+            if (!isClockOnly) {
+                switchPage();
+            }
+            // 時間帯チェック開始
+            checkTime();
             // 1分ごとにring.mp3の再生をチェック
             setInterval(checkRingTime, 60 * 1000);
             // 初回チェック
