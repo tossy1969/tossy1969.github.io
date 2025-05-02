@@ -1,15 +1,13 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta name="mobile-web-app-capable" content="yes">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Dynamic Display</title>
     <style>
         body {
-            margin: 0;
-            padding: 0;
             background-color: black;
+            margin: 0;
             overflow: hidden;
         }
         iframe {
@@ -21,53 +19,79 @@
 </head>
 <body>
     <iframe id="displayFrame" src="weather.html"></iframe>
+    <audio id="ringAudio" src="ring.mp3"></audio>
 
     <script>
         const frame = document.getElementById('displayFrame');
+        const audio = document.getElementById('ringAudio');
+        let isWeatherOnly = false;
+        let currentIndex = 0;
+        const pages = ['weather.html', 'metro.html'];
+        const ringTimes = ['09:00', '12:00', '15:00', '18:00', '21:00'];
 
+        // 現在の時間を取得
         function getCurrentTime() {
             const now = new Date();
-            const hours = now.getHours();
-            const minutes = now.getMinutes();
-            return hours + minutes / 60;
+            return {
+                hours: now.getHours(),
+                minutes: now.getMinutes(),
+                timeString: now.toTimeString().slice(0, 5) // HH:MM形式
+            };
         }
 
-        function isNightTime() {
-            const time = getCurrentTime();
-            // 0:30 (0.5) から 4:30 (4.5) の時間帯をチェック
-            return time >= 0.5 && time < 4.5;
+        // 0:30〜4:30の時間帯かどうかを判定
+        function isWeatherOnlyTime() {
+            const { hours, minutes } = getCurrentTime();
+            const totalMinutes = hours * 60 + minutes;
+            const start = 0 * 60 + 30; // 0:30
+            const end = 4 * 60 + 30;   // 4:30
+            return totalMinutes >= start && totalMinutes < end;
         }
 
-        function showWeatherOnly() {
-            frame.src = 'weather.html';
-            // 30分ごとにリロード (30分 = 1800000ミリ秒)
-            setInterval(() => {
+        // ページ切り替え処理
+        function switchPage() {
+            if (isWeatherOnly) {
                 frame.src = 'weather.html';
-            }, 1800000);
+            } else {
+                currentIndex = (currentIndex + 1) % pages.length;
+                frame.src = pages[currentIndex];
+            }
         }
 
-        function togglePages() {
-            let isWeather = true;
-            frame.src = 'weather.html';
-
-            // 20秒ごとに切り替え (20秒 = 20000ミリ秒)
-            setInterval(() => {
-                isWeather = !isWeather;
-                frame.src = isWeather ? 'weather.html' : 'metro.html';
-            }, 20000);
+        // 時間帯のチェックとリロード間隔の設定
+        function checkTimeAndReload() {
+            isWeatherOnly = isWeatherOnlyTime();
+            const reloadInterval = isWeatherOnly ? 30 * 60 * 1000 : 20 * 1000; // 30分 or 20秒
+            setTimeout(checkTimeAndReload, reloadInterval);
+            if (isWeatherOnly) {
+                frame.src = 'weather.html';
+            } else {
+                switchPage();
+            }
         }
 
-        // 初期実行
-        if (isNightTime()) {
-            showWeatherOnly();
-        } else {
-            togglePages();
+        // ring.mp3の再生チェック
+        function checkRingTime() {
+            const { timeString } = getCurrentTime();
+            if (ringTimes.includes(timeString)) {
+                audio.play().catch(e => console.error('Audio play failed:', e));
+            }
         }
 
-        // 時間帯の変化をチェック（1分ごとに確認）
-        setInterval(() => {
-            location.reload(); // 時間帯が変わったらページをリロードしてロジックを再評価
-        }, 60000);
+        // 初期化
+        function init() {
+            // 初回時間帯チェック
+            isWeatherOnly = isWeatherOnlyTime();
+            // ページ切り替え開始
+            checkTimeAndReload();
+            // 1分ごとにring.mp3の再生をチェック
+            setInterval(checkRingTime, 60 * 1000);
+            // 初回チェック
+            checkRingTime();
+        }
+
+        // ページ読み込み時に初期化
+        window.onload = init;
     </script>
 </body>
 </html>
