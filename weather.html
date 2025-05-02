@@ -40,11 +40,16 @@
             height: 180px;
             margin: 0 auto;
         }
-        /* 雲アイコンのグレーを濃くする */
+        /* 雲アイコンのグレーを濃く */
         td[data-weather="02d"] img.weather-icon,
         td[data-weather="03d"] img.weather-icon,
         td[data-weather="04d"] img.weather-icon {
-            filter: contrast(1.2) brightness(0.9); /* コントラストUP、明るさ微減 */
+            filter: contrast(1.2) brightness(0.9);
+        }
+        /* 晴れアイコンの太陽の色を鮮やかに */
+        td[data-weather="01d"] img.weather-icon,
+        td[data-weather="01n"] img.weather-icon {
+            filter: hue-rotate(-10deg) saturate(1.5);
         }
         .time {
             font-size: 2.8em;
@@ -112,7 +117,7 @@
 
     <script>
         // バージョン確認用ログ
-        console.log("Version: 1.0.1");
+        console.log("Version: 1.0.2");
 
         // 現在時刻を取得し、次の「3時間ごとの時刻」に揃える
         const now = new Date();
@@ -124,10 +129,10 @@
         function setBackgroundColor(cell, icon) {
             console.log(`背景色設定: セル=${cell.querySelector('.time').textContent}, アイコン=${icon}`); // デバッグ用
             if (['01d', '01n'].includes(icon)) {
-                cell.style.backgroundColor = '#f39c12'; // 晴れ：オレンジ
+                cell.style.backgroundColor = '#f7b731'; // 晴れ：黄色寄り
                 cell.querySelector('.time').style.color = '#fff';
             } else if (['09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n'].includes(icon)) {
-                cell.style.backgroundColor = '#3498db'; // 雨/雪/雷：ブルー
+                cell.style.backgroundColor = '#808080'; // 雨/雪/雷：グレー
                 cell.querySelector('.time').style.color = '#fff';
             } else {
                 cell.style.backgroundColor = '#fff'; // その他：白
