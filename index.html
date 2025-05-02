@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Dynamic Display</title>
     <style>
         body {
@@ -18,15 +21,16 @@
     </style>
 </head>
 <body>
-    <iframe id="displayFrame" src="weather.html"></iframe>
+    <iframe id="displayFrame" src="/weather.html"></iframe>
     <audio id="ringAudio" src="ring.mp3"></audio>
 
     <script>
+        console.log("index.html読み込み: Version 1.0.6");
         const frame = document.getElementById('displayFrame');
         const audio = document.getElementById('ringAudio');
         let isWeatherOnly = false;
         let currentIndex = 0;
-        const pages = ['weather.html', 'metro.html'];
+        const pages = ['/weather.html', '/metro.html'];
         const ringTimes = ['09:00', '12:00', '15:00', '18:00', '21:00'];
 
         // 現在の時間を取得
@@ -50,21 +54,25 @@
 
         // ページ切り替え処理
         function switchPage() {
+            const timestamp = Date.now();
             if (isWeatherOnly) {
-                frame.src = 'weather.html';
+                frame.src = `/weather.html?t=${timestamp}`;
             } else {
                 currentIndex = (currentIndex + 1) % pages.length;
-                frame.src = pages[currentIndex];
+                frame.src = `${pages[currentIndex]}?t=${timestamp}`;
             }
+            console.log(`ページ切り替え: ${frame.src}`);
         }
 
         // 時間帯のチェックとリロード間隔の設定
         function checkTimeAndReload() {
             isWeatherOnly = isWeatherOnlyTime();
-            const reloadInterval = isWeatherOnly ? 30 * 60 * 1000 : 20 * 1000; // 30分 or 20秒
+            const reloadInterval = isWeatherOnly ? 30 * 60 * 1000 : 60 * 1000; // 30分 or 60秒
             setTimeout(checkTimeAndReload, reloadInterval);
             if (isWeatherOnly) {
-                frame.src = 'weather.html';
+                const timestamp = Date.now();
+                frame.src = `/weather.html?t=${timestamp}`;
+                console.log(`Weather専用時間帯: ${frame.src}`);
             } else {
                 switchPage();
             }
@@ -82,6 +90,10 @@
         function init() {
             // 初回時間帯チェック
             isWeatherOnly = isWeatherOnlyTime();
+            // 初回ページ設定
+            const timestamp = Date.now();
+            frame.src = isWeatherOnly ? `/weather.html?t=${timestamp}` : `${pages[currentIndex]}?t=${timestamp}`;
+            console.log(`初期ページ: ${frame.src}`);
             // ページ切り替え開始
             checkTimeAndReload();
             // 1分ごとにring.mp3の再生をチェック
