@@ -67,7 +67,7 @@
             width: 4px;
             height: 4px;
             border-radius: 50%;
-            background-color: #ffffff; /* デフォルトは白 */
+            background-color: #ffffff; /* 白 */
         }
         .rain-dot.blue {
             background-color: #add8e6; /* 水色 */
@@ -169,12 +169,12 @@
 
     <script>
         // バージョン確認用ログ
-        console.log("Version: 1.0.4");
+        console.log("Version: 1.0.5");
 
         // 現在時刻を取得し、次の「3時間ごとの時刻」に揃える
         const now = new Date();
         const hours = now.getHours();
-        const startHourOffset = Math.ceil(hours / 3) * 3;
+        const startHourOffset = Math.floor(hours / 3) * 3; // 0:00以降の不整合を防ぐ
         const startHour = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startHourOffset, 0, 0);
 
         // 背景色を設定する関数
@@ -208,15 +208,11 @@
                 for (let i = 0; i < 10; i++) {
                     const dot = document.createElement('span');
                     dot.className = 'rain-dot';
-                    // 白と水色を交互に
                     if (i % 2 === 0) {
                         dot.classList.add('blue');
                     }
-                    // ランダムな左右位置
                     dot.style.left = `${Math.random() * 100}%`;
-                    // ランダムな遅延（0～1秒）
                     dot.style.animationDelay = `${Math.random()}s`;
-                    // ランダムな速度（0.5～1.5秒）
                     dot.style.animationDuration = `${0.5 + Math.random()}s`;
                     rainDots.appendChild(dot);
                 }
@@ -229,7 +225,6 @@
             const time = new Date(startHour.getTime() + offset * 60 * 60 * 1000);
             const hours = time.getHours().toString().padStart(2, '0');
             cell.querySelector('.time').textContent = `${hours}:00`;
-            // 初期背景色を設定
             const weatherCode = cell.getAttribute('data-weather');
             setBackgroundColor(cell, weatherCode);
         });
@@ -262,14 +257,20 @@
             99: '11d'  // 雷雨（強い雹）
         };
 
-        // Open-Meteo APIで天気データを取得（タイムスタンプでキャッシュ回避）
+        // Open-Meteo APIで天気データを取得
         const timestamp = Date.now();
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=35.7076&longitude=139.6637&hourly=weathercode&timezone=Asia%2FTokyo&forecast_days=1&t=${timestamp}`;
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startDate = today.toISOString().split('T')[0];
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=35.7076&longitude=139.6637&hourly=weathercode&timezone=Asia%2FTokyo&start_date=${startDate}&end_date=${startDate}&cache_bust=${timestamp}`;
         fetch(url)
             .then(response => response.json())
             .then(data => {
+                console.log('APIレスポンス:', data); // デバッグ用
                 const cells = document.querySelectorAll('td');
                 const hourlyData = data.hourly;
+                if (!hourlyData || !hourlyData.time || !hourlyData.weathercode) {
+                    throw new Error('不正なAPIレスポンス: 必要なデータが欠落');
+                }
                 const times = hourlyData.time;
                 const weatherCodes = hourlyData.weathercode;
 
@@ -286,15 +287,16 @@
                         });
                     }
                 }
+                console.log('抽出データ:', forecastList); // デバッグ用
 
                 cells.forEach((cell, index) => {
                     if (forecastList[index]) {
                         const item = forecastList[index];
-                        const icon = weatherCodeMap[item.weathercode] || '01d'; // デフォルトは晴れ
+                        const icon = weatherCodeMap[item.weathercode] || 'unknown'; // デフォルトは不明
                         console.log(`セル${index}: WMOコード=${item.weathercode}, アイコン=${icon}`); // デバッグ用
                         const time = item.time;
                         const hours = time.getHours().toString().padStart(2, '0');
-                        cell.querySelector('img').src = `https://openweathermap.org/img/wn/${icon}@2x.png?t=${timestamp}`;
+                        cell.querySelector('img').src = icon === 'unknown' ? 'https://openweathermap.org/img/wn/01d@2x.png' : `https://openweathermap.org/img/wn/${icon}@2x.png?t=${timestamp}`;
                         cell.querySelector('img').alt = item.weathercode in weatherCodeMap ? '天気' : '不明';
                         cell.querySelector('.time').textContent = `${hours}:00`;
                         cell.setAttribute('data-weather', icon);
@@ -329,13 +331,13 @@
             })
             .catch(error => {
                 console.error('天気データ取得エラー:', error);
-                // エラー時は静的データの背景色を再適用
+                // エラー時は静的データの背景色とアイコンを保持
                 document.querySelectorAll('td').forEach(cell => {
                     const weatherCode = cell.getAttribute('data-weather');
                     setBackgroundColor(cell, weatherCode);
+                    // 雨ドットを再初期化
+                    addRainDots();
                 });
-                // エラー時も雨ドットを再初期化
-                addRainDots();
             });
     </script>
 </body>
