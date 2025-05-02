@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>デジタル時計</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: black;
+        }
+        #clock {
+            width: 600px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .digit {
+            width: 120px;
+            height: 200px;
+            position: relative;
+        }
+        .colon {
+            width: 30px;
+            height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center/schema;
+            align-items: center;
+        }
+        .colon-dot {
+            width: 30px;
+            height: 30px;
+            background-color: white;
+            border-radius: 50%;
+            margin: 30px 0;
+        }
+        .colon.hidden .colon-dot {
+            background-color: black;
+        }
+        .segment {
+            fill: white;
+            stroke: white;
+            stroke-width: 6;
+        }
+    </style>
+</head>
+<body>
+    <div id="clock">
+        <div class="digit" id="digit1"></div>
+        <div class="digit" id="digit2"></div>
+        <div class="colon" id="colon">
+            <div class="colon-dot"></div>
+            <div class="colon-dot"></div>
+        </div>
+        <div class="digit" id="digit3"></div>
+        <div class="digit" id="digit4"></div>
+    </div>
+
+    <script>
+        // 7セグメントのSVG定義（高さ200px、セグメントを太く）
+        const segmentSVG = (id) => `
+            <svg width="120" height="200" viewBox="0 0 120 200">
+                <!-- セグメントa (上) -->
+                <polygon class="segment" id="${id}-a" points="25,10 95,10 90,20 30,20"/>
+                <!-- セグメントb (右上) -->
+                <polygon class="segment" id="${id}-b" points="100,25 110,30 110,85 100,90"/>
+                <!-- セグメントc (右下) -->
+                <polygon class="segment" id="${id}-c" points="100,110 110,115 110,170 100,175"/>
+                <!-- セグメントd (下) -->
+                <polygon class="segment" id="${id}-d" points="25,190 95,190 90,180 30,180"/>
+                <!-- セグメントe (左下) -->
+                <polygon class="segment" id="${id}-e" points="10,110 20,115 20,170 10,175"/>
+                <!-- セグメントf (左上) -->
+                <polygon class="segment" id="${id}-f" points="10,25 20,30 20,85 10,90"/>
+                <!-- セグメントg (中) -->
+                <polygon class="segment" id="${id}-g" points="25,95 95,95 90,105 30,105"/>
+            </svg>
+        `;
+
+        // 7セグメントの表示パターン (0-9)
+        const patterns = {
+            '0': ['a', 'b', 'c', 'd', 'e', 'f'],
+            '1': ['b', 'c'],
+            '2': ['a', 'b', 'd', 'e', 'g'],
+            '3': ['a', 'b', 'c', 'd', 'g'],
+            '4': ['b', 'c', 'f', 'g'],
+            '5': ['a', 'c', 'd', 'f', 'g'],
+            '6': ['a', 'c', 'd', 'e', 'f', 'g'],
+            '7': ['a', 'b', 'c'],
+            '8': ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
+            '9': ['a', 'b', 'c', 'd', 'f', 'g']
+        };
+
+        // SVGを各桁に設定
+        document.getElementById('digit1').innerHTML = segmentSVG('d1');
+        document.getElementById('digit2').innerHTML = segmentSVG('d2');
+        document.getElementById('digit3').innerHTML = segmentSVG('d3');
+        document.getElementById('digit4').innerHTML = segmentSVG('d4');
+
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const time = hours + minutes;
+
+            // 各桁を更新
+            ['d1', 'd2', 'd3', 'd4'].forEach((digitId, index) => {
+                const digit = time[index];
+                const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+                segments.forEach(segment => {
+                    const element = document.getElementById(`${digitId}-${segment}`);
+                    if (patterns[digit].includes(segment)) {
+                        element.style.fill = 'white';
+                        element.style.stroke = 'white';
+                    } else {
+                        element.style.fill = 'black';
+                        element.style.stroke = 'black';
+                    }
+                });
+            });
+
+            // コロンの点滅
+            const colon = document.getElementById('colon');
+            colon.classList.toggle('hidden');
+        }
+
+        // 初回更新
+        updateClock();
+        // 1秒ごとに更新
+        setInterval(updateClock, 1000);
+    </script>
+</body>
+</html>
