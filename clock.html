@@ -17,7 +17,7 @@
             height: 200px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: space-between; /* 均等間隔 */
         }
         .digit {
             width: 120px;
@@ -25,7 +25,7 @@
             position: relative;
         }
         .colon {
-            width: 30px;
+            width: 20px;
             height: 200px;
             display: flex;
             flex-direction: column;
@@ -33,19 +33,23 @@
             align-items: center;
         }
         .colon-dot {
-            width: 20px;
+            width: 20px; /* 2倍の大きさ */
             height: 20px;
             background-color: white;
             border-radius: 50%;
             margin: 30px 0;
         }
         .colon.hidden .colon-dot {
-            background-color: black;
+            background-color: #222222; /* 消灯時はダークグレー */
         }
         .segment {
             fill: white;
             stroke: white;
-            stroke-width: 6;
+            stroke-width: 4; /* 太めに */
+        }
+        .segment.off {
+            fill: #222222; /* 消灯セグメントはダークグレー */
+            stroke: #222222;
         }
     </style>
 </head>
@@ -62,23 +66,23 @@
     </div>
 
     <script>
-        // 7セグメントのSVG定義（高さ200px、セグメントを太く）
+        // 7セグメントのSVG定義（高さ200px、セグメントを3倍太く）
         const segmentSVG = (id) => `
             <svg width="120" height="200" viewBox="0 0 120 200">
                 <!-- セグメントa (上) -->
-                <polygon class="segment" id="${id}-a" points="25,10 95,10 90,20 30,20"/>
+                <polygon class="segment" id="${id}-a" points="30,10 90,10 80,25 40,25"/>
                 <!-- セグメントb (右上) -->
-                <polygon class="segment" id="${id}-b" points="100,25 110,30 110,85 100,90"/>
+                <polygon class="segment" id="${id}-b" points="95,30 110,40 110,90 95,100"/>
                 <!-- セグメントc (右下) -->
-                <polygon class="segment" id="${id}-c" points="100,110 110,115 110,170 100,175"/>
+                <polygon class="segment" id="${id}-c" points="95,110 110,120 110,170 95,180"/>
                 <!-- セグメントd (下) -->
-                <polygon class="segment" id="${id}-d" points="25,190 95,190 90,180 30,180"/>
+                <polygon class="segment" id="${id}-d" points="30,190 90,190 80,175 40,175"/>
                 <!-- セグメントe (左下) -->
-                <polygon class="segment" id="${id}-e" points="10,110 20,115 20,170 10,175"/>
+                <polygon class="segment" id="${id}-e" points="10,110 25,120 25,170 10,180"/>
                 <!-- セグメントf (左上) -->
-                <polygon class="segment" id="${id}-f" points="10,25 20,30 20,85 10,90"/>
+                <polygon class="segment" id="${id}-f" points="10,30 25,40 25,90 10,100"/>
                 <!-- セグメントg (中) -->
-                <polygon class="segment" id="${id}-g" points="25,95 95,95 90,105 30,105"/>
+                <polygon class="segment" id="${id}-g" points="30,95 90,95 80,110 40,110"/>
             </svg>
         `;
 
@@ -86,7 +90,7 @@
         const patterns = {
             '0': ['a', 'b', 'c', 'd', 'e', 'f'],
             '1': ['b', 'c'],
-            '2': ['RIAL', 'b', 'd', 'e', 'g'],
+            '2': ['a', 'b', 'd', 'e', 'g'],
             '3': ['a', 'b', 'c', 'd', 'g'],
             '4': ['b', 'c', 'f', 'g'],
             '5': ['a', 'c', 'd', 'f', 'g'],
@@ -117,9 +121,11 @@
                     if (patterns[digit].includes(segment)) {
                         element.style.fill = 'white';
                         element.style.stroke = 'white';
+                        element.classList.remove('off');
                     } else {
-                        element.style.fill = 'black';
-                        element.style.stroke = 'black';
+                        element.style.fill = '#222222'; // 消灯はダークグレー
+                        element.style.stroke = '#222222';
+                        element.classList.add('off');
                     }
                 });
             });
