@@ -22,10 +22,10 @@
 </head>
 <body>
     <iframe id="displayFrame" src="/weather.html"></iframe>
-    <audio id="ringAudio" src="ring.mp3"></audio>
+    <audio id="ringAudio" src="/ring.mp3" preload="auto"></audio>
 
     <script>
-        console.log("index.html読み込み: Version 1.0.8");
+        console.log("index.html読み込み: Version 1.0.9");
         const frame = document.getElementById('displayFrame');
         const audio = document.getElementById('ringAudio');
         let isClockOnly = false;
@@ -33,6 +33,19 @@
         const pages = ['/weather.html', '/clock.html', '/metro.html', '/clock.html'];
         const displayDurations = [20000, 5000, 30000, 5000]; // 20秒, 5秒, 30秒, 5秒
         const ringTimes = ['09:00', '12:00', '15:00', '18:00', '21:00'];
+
+        // ユーザー操作を検知してオートプレイを有効化
+        let isUserInteracted = false;
+        document.body.addEventListener('click', () => {
+            isUserInteracted = true;
+            console.log('ユーザー操作検知: オートプレイ許可');
+            // テスト再生（無音）でオートプレイを有効化
+            audio.play().then(() => {
+                audio.pause();
+                audio.currentTime = 0;
+                console.log('オートプレイ有効化成功');
+            }).catch(e => console.error('オートプレイ有効化失敗:', e));
+        });
 
         // 現在の時間を取得
         function getCurrentTime() {
@@ -79,12 +92,10 @@
             const wasClockOnly = isClockOnly;
             isClockOnly = isClockOnlyTime();
             if (isClockOnly && !wasClockOnly) {
-                // 0:30〜4:30に入った場合、clock.htmlを即時設定
                 const timestamp = Date.now();
                 frame.src = `/clock.html?t=${timestamp}`;
                 console.log(`Clock専用時間帯開始: ${frame.src}`);
             } else if (!isClockOnly && wasClockOnly) {
-                // 0:30〜4:30から抜けた場合、切り替え再開
                 currentIndex = -1; // 最初から
                 switchPage();
             }
@@ -94,13 +105,29 @@
         // ring.mp3の再生チェック
         function checkRingTime() {
             const { timeString } = getCurrentTime();
+            console.log(`再生チェック: 現在時刻=${timeString}, 対象=${ringTimes.join(', ')}`);
             if (ringTimes.includes(timeString)) {
-                audio.play().catch(e => console.error('Audio play failed:', e));
+                console.log(`再生試行: ${timeString}`);
+                if (isUserInteracted) {
+                    audio.currentTime = 0; // 最初から再生
+                    audio.play().then(() => {
+                        console.log(`ring.mp3再生成功: ${timeString}`);
+                    }).catch(e => {
+                        console.error(`ring.mp3再生失敗: ${timeString}, エラー:`, e);
+                    });
+                } else {
+                    console.warn(`ring.mp3再生スキップ: ユーザー操作未検知 (${timeString})`);
+                }
             }
         }
 
         // 初期化
         function init() {
+            // ring.mp3のロード確認
+            audio.load();
+            audio.onloadeddata = () => console.log('ring.mp3ロード成功');
+            audio.onerror = () => console.error('ring.mp3ロード失敗');
+
             // 初回時間帯チェック
             isClockOnly = isClockOnlyTime();
             // 初回ページ設定
@@ -113,8 +140,8 @@
             }
             // 時間帯チェック開始
             checkTime();
-            // 1分ごとにring.mp3の再生をチェック
-            setInterval(checkRingTime, 60 * 1000);
+            // 10秒ごとにring.mp3の再生をチェック
+            setInterval(checkRingTime, 10 * 1000);
             // 初回チェック
             checkRingTime();
         }
