@@ -190,7 +190,7 @@
 
     <script>
         // バージョン確認用ログ
-        console.log("Version: 1.0.9"); // バージョン更新
+        console.log("Version: 1.0.10"); // バージョン更新
 
         // 現在時刻を取得し、次の「3時間ごとの時刻」に揃える
         const now = new Date();
@@ -298,17 +298,23 @@
                 const cells = document.querySelectorAll('td');
                 const hourlyData = data.hourly || {};
                 const currentWeather = data.current_weather || {};
-                if (!hourlyData.time || !hourlyData.weathercode || !hourlyData.temperature_2m) {
-                    throw new Error('不正なAPIレスポンス: 必要なデータが欠落');
+                
+                // 追加: レスポンスの詳細ログ
+                console.log('hourly.time:', hourlyData.time);
+                console.log('hourly.weathercode:', hourlyData.weathercode);
+                console.log('hourly.temperature_2m:', hourlyData.temperature_2m);
+                console.log('current_weather.temperature:', currentWeather.temperature);
+
+                if (!hourlyData.time || !hourlyData.weathercode) {
+                    throw new Error('不正なAPIレスポンス: 時間または天気コードが欠落');
+                }
+                if (!hourlyData.temperature_2m && !currentWeather.temperature) {
+                    console.warn('温度データ欠落: hourly.temperature_2mおよびcurrent_weather.temperatureがありません');
                 }
                 const times = hourlyData.time || [];
                 const weatherCodes = hourlyData.weathercode || [];
-                const temperatures = hourlyData.temperature_2m || [];
+                const temperatures = hourlyData.temperature_2m || Array(times.length).fill(null);
                 const fallbackTemp = currentWeather.temperature != null ? currentWeather.temperature : null;
-
-                // 追加: 気温データの確認
-                console.log('気温データ:', temperatures);
-                console.log('フォールバック気温:', fallbackTemp);
 
                 // 開始時刻以降の3時間ごとのデータを抽出
                 const forecastList = [];
@@ -330,7 +336,6 @@
                     if (forecastList[index]) {
                         const item = forecastList[index];
                         const icon = weatherCodeMap[item.weathercode] || 'unknown';
-                        // 修正: 気温が null の場合のフォールバックを強化
                         const temp = item.temperature != null && !isNaN(item.temperature) ? `${Math.round(item.temperature)}℃` : '--℃';
                         console.log(`セル${index}: WMOコード=${item.weathercode}, アイコン=${icon}, 気温=${temp}`);
                         const time = item.time;
