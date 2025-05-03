@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>東京中野 24時間天気予報</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e0e0e0;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        table {
+            width: 100%;
+            max-width: 640px;
+            border-collapse: collapse;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        td {
+            width: 25%;
+            height: 120px;
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid #ddd;
+            padding: 0;
+            position: relative;
+        }
+        .weather-icon {
+            width: 180px;
+            height: 180px;
+            margin: 0 auto;
+        }
+        td[data-weather="02d"] img.weather-icon,
+        td[data-weather="03d"] img.weather-icon,
+        td[data-weather="04d"] img.weather-icon {
+            filter: contrast(1.2) brightness(0.9);
+        }
+        td[data-weather="01d"] img.weather-icon,
+        td[data-weather="01n"] img.weather-icon {
+            filter: hue-rotate(-10deg) saturate(1.5);
+        }
+        .rain-dots {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 180px;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .rain-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: #ffffff;
+        }
+        .rain-dot.blue {
+            background-color: #add8e6;
+        }
+        .rain-dot {
+            animation: fall linear infinite;
+        }
+        @keyframes fall {
+            0% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(180px);
+                opacity: 0.5;
+            }
+        }
+        .time {
+            font-size: 2.8em;
+            color: #333;
+            margin-top: -8px;
+            font-weight: bold;
+        }
+        .temperature {
+            font-family: Arial, sans-serif;
+            font-size: 2.7em;
+            font-weight: 300;
+            color: #f39c12;
+            margin-bottom: 4px;
+            display: block;
+            visibility: visible;
+        }
+        td[data-weather="01d"] .temperature,
+        td[data-weather="01n"] .temperature {
+            color: #ff0000;
+        }
+        @media (max-width: 1024px) {
+            table {
+                max-width: 560px;
+            }
+            td {
+                height: 100px;
+            }
+            .weather-icon {
+                width: 140px;
+                height: 140px;
+            }
+            .rain-dots {
+                height: 140px;
+            }
+            .rain-dot {
+                animation: fall linear infinite;
+            }
+            @keyframes fall {
+                0% {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+                100% {
+                    transform: translateY(140px);
+                    opacity: 0.5;
+                }
+            }
+            .time {
+                font-size: 2.4em;
+                margin-top: -6px;
+            }
+            .temperature {
+                font-size: 2.1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <table>
+        <tr>
+            <td data-weather="01d">
+                <img src="https://openweathermap.org/img/wn/01d@2x.png" alt="晴れ" class="weather-icon">
+                <div class="temperature">--℃</div>
+                <div class="time" data-hour="0"></div>
+            </td>
+            <td data-weather="02d">
+                <img src="https://openweathermap.org/img/wn/02d@2x.png" alt="曇り" class="weather-icon">
+                <div class="temperature">--℃</div>
+                <div class="time" data-hour="3"></div>
+            </td>
+            <td data-weather="03d">
+                <img src="https://openweathermap.org/img/wn/03d@2x.png" alt="曇り" class="weather-icon">
+                <div class="temperature">--℃</div>
+                <div class="time" data-hour="6"></div>
+            </td>
+            <td data-weather="04d">
+                <img src="https://openweathermap.org/img/wn/04d@2x.png" alt="厚い曇り" class="weather-icon">
+                <div class="temperature">--℃</div>
+                <div class="time" data-hour="9"></div>
+            </td>
+        </tr>
+        <tr>
+            <td data-weather="09d">
+                <div class="rain-dots"></div>
+                <img src="https://openweathermap.org/img/wn/09d@2x.png" alt="小雨" class="weather-icon">
+                <div class="temperature">--℃</div>
+                <div class="time" data-hour="12"></div>
+            </td>
+            <td data-weather="10d">
+                <div class="rain-dots"></div>
+                <img src="https://openweathermap.org/img/wn/10d@2x.png" alt="雨" class="weather-icon">
+                <div class="temperature">--℃</div>
+                <div class="time" data-hour="15"></div>
+            </td>
+            <td data-weather="01d">
+                <img src="https://openweathermap.org/img/wn/01d@2x.png" alt="晴れ" class="weather-icon">
+                <div class="temperature">--℃</div>
+                <div class="time" data-hour="18"></div>
+            </td>
+            <td data-weather="02d">
+                <img src="https://openweathermap.org/img/wn/02d@2x.png" alt="曇り" class="weather-icon">
+                <div class="temperature">--℃</div>
+                <div class="time" data-hour="21"></div>
+            </td>
+        </tr>
+    </table>
+
+    <script>
+        // バージョン確認用ログ
+        console.log("Version: 1.0.11"); // バージョン更新
+
+        // 現在時刻を取得し、次の「3時間ごとの時刻」に揃える
+        const now = new Date();
+        const hours = now.getHours();
+        const startHourOffset = Math.floor(hours / 3) * 3;
+        const startHour = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startHourOffset, 0, 0);
+
+        // 背景色を設定する関数
+        function setBackgroundColor(cell, icon) {
+            console.log(`背景色設定: セル=${cell.querySelector('.time').textContent}, アイコン=${icon}`);
+            if (['01d', '01n'].includes(icon)) {
+                cell.style.backgroundColor = '#f7b731';
+                cell.querySelector('.time').style.color = '#fff';
+                cell.querySelector('.temperature').style.color = '#ff0000';
+            } else if (['09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n'].includes(icon)) {
+                cell.style.backgroundColor = '#808080';
+                cell.querySelector('.time').style.color = '#fff';
+                cell.querySelector('.temperature').style.color = '#f39c12';
+            } else {
+                cell.style.backgroundColor = '#fff';
+                cell.querySelector('.time').style.color = '#333';
+                cell.querySelector('.temperature').style.color = '#f39c12';
+            }
+        }
+
+        // 雨ドットを動的に追加
+        function addRainDots() {
+            const rainCells = document.querySelectorAll('td[data-weather="09d"], td[data-weather="09n"], td[data-weather="10d"], td[data-weather="10n"], td[data-weather="11d"], td[data-weather="11n"], td[data-weather="13d"], td[data-weather="13n"]');
+            rainCells.forEach(cell => {
+                let rainDots = cell.querySelector('.rain-dots');
+                if (!rainDots) {
+                    rainDots = document.createElement('div');
+                    rainDots.className = 'rain-dots';
+                    cell.insertBefore(rainDots, cell.firstChild);
+                }
+                rainDots.innerHTML = '';
+                for (let i = 0; i < 10; i++) {
+                    const dot = document.createElement('span');
+                    dot.className = 'rain-dot';
+                    if (i % 2 === 0) {
+                        dot.classList.add('blue');
+                    }
+                    dot.style.left = `${Math.random() * 100}%`;
+                    dot.style.animationDelay = `${Math.random()}s`;
+                    dot.style.animationDuration = `${0.5 + Math.random()}s`;
+                    rainDots.appendChild(dot);
+                }
+            });
+        }
+
+        // 各セルの時刻と仮の気温を初期化し、静的データの背景色を設定
+        document.querySelectorAll('td').forEach(cell => {
+            const offset = parseInt(cell.querySelector('.time').getAttribute('data-hour'));
+            const time = new Date(startHour.getTime() + offset * 60 * 60 * 1000);
+            const hours = time.getHours().toString().padStart(2, '0');
+            cell.querySelector('.time').textContent = `${hours}:00`;
+            cell.querySelector('.temperature').textContent = '--℃';
+            const weatherCode = cell.getAttribute('data-weather');
+            setBackgroundColor(cell, weatherCode);
+        });
+
+        // 雨ドットを初期化
+        addRainDots();
+
+        // WMO天気コードをOpenWeatherMapアイコンにマッピング
+        const weatherCodeMap = {
+            0: '01d', // 快晴
+            1: '02d', // 晴れ
+            2: '03d', // 一部曇り
+            3: '04d', // 曇り
+            45: '50d', // 霧
+            48: '50d', // 霧（氷点下）
+            51: '09d', // 小雨
+            53: '09d', // 中雨
+            55: '10d', // 強い雨
+            61: '10d', // 雨
+            63: '10d', // 中程度の雨
+            65: '10d', // 強い雨
+            71: '13d', // 雪
+            73: '13d', // 中程度の雪
+            75: '13d', // 強い雪
+            80: '09d', // にわか雨
+            81: '10d', // 強いシャワー
+            82: '10d', // 非常に強いシャワー
+            95: '11d', // 雷雨
+            96: '11d', // 雷雨（軽い雹）
+            99: '11d'  // 雷雨（強い雹）
+        };
+
+        // Open-Meteo APIで天気データと気温を取得
+        const timestamp = Date.now();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startDate = today.toISOString().split('T')[0];
+        // 修正: current_weather の誤字を修正
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=35.7076&longitude=139.6637&hourly=weathercode,temperature_2m&current_weather=true&timezone=Asia%2FTokyo&start_date=${startDate}&end_date=${startDate}&cache_bust=${timestamp}`;
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTPエラー: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('APIレスポンス:', JSON.stringify(data, null, 2));
+                const cells = document.querySelectorAll('td');
+                const hourlyData = data.hourly || {};
+                const currentWeather = data.current_weather || {};
+                
+                // 追加: レスポンスの詳細ログ
+                console.log('hourly.time:', hourlyData.time);
+                console.log('hourly.weathercode:', hourlyData.weathercode);
+                console.log('hourly.temperature_2m:', hourlyData.temperature_2m);
+                console.log('current_weather.temperature:', currentWeather.temperature);
+
+                if (!hourlyData.time || !hourlyData.weathercode) {
+                    throw new Error('不正なAPIレスポンス: 時間または天気コードが欠落');
+                }
+                if (!hourlyData.temperature_2m && !currentWeather.temperature) {
+                    console.warn('温度データ欠落: hourly.temperature_2mおよびcurrent_weather.temperatureがありません');
+                }
+                const times = hourlyData.time || [];
+                const weatherCodes = hourlyData.weathercode || [];
+                const temperatures = hourlyData.temperature_2m || Array(times.length).fill(null);
+                const fallbackTemp = currentWeather.temperature != null ? currentWeather.temperature : null;
+
+                // 開始時刻以降の3時間ごとのデータを抽出
+                const forecastList = [];
+                const startTimeMs = startHour.getTime();
+                for (let i = 0; i < times.length; i++) {
+                    const forecastTime = new Date(times[i]);
+                    const diffHours = (forecastTime - startTimeMs) / (1000 * 60 * 60);
+                    if (diffHours >= 0 && diffHours % 3 === 0 && forecastList.length < 8) {
+                        forecastList.push({
+                            time: forecastTime,
+                            weathercode: weatherCodes[i],
+                            temperature: temperatures[i] != null ? temperatures[i] : fallbackTemp
+                        });
+                    }
+                }
+                console.log('抽出データ:', JSON.stringify(forecastList, null, 2));
+
+                cells.forEach((cell, index) => {
+                    if (forecastList[index]) {
+                        const item = forecastList[index];
+                        const icon = weatherCodeMap[item.weathercode] || 'unknown';
+                        const temp = item.temperature != null && !isNaN(item.temperature) ? `${Math.round(item.temperature)}℃` : '--℃';
+                        console.log(`セル${index}: WMOコード=${item.weathercode}, アイコン=${icon}, 気温=${temp}`);
+                        const time = item.time;
+                        const hours = time.getHours().toString().padStart(2, '0');
+                        cell.querySelector('img').src = icon === 'unknown' ? 'https://openweathermap.org/img/wn/01d@2x.png' : `https://openweathermap.org/img/wn/${icon}@2x.png?t=${timestamp}`;
+                        cell.querySelector('img').alt = item.weathercode in weatherCodeMap ? '天気' : '不明';
+                        cell.querySelector('.time').textContent = `${hours}:00`;
+                        cell.querySelector('.temperature').textContent = temp;
+                        cell.setAttribute('data-weather', icon);
+                        setBackgroundColor(cell, icon);
+                        // 雨ドットの更新
+                        let rainDots = cell.querySelector('.rain-dots');
+                        if (!rainDots && ['09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n'].includes(icon)) {
+                            rainDots = document.createElement('div');
+                            rainDots.className = 'rain-dots';
+                            cell.insertBefore(rainDots, cell.firstChild);
+                        }
+                        if (rainDots) {
+                            rainDots.innerHTML = '';
+                            if (['09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n'].includes(icon)) {
+                                for (let i = 0; i < 10; i++) {
+                                    const dot = document.createElement('span');
+                                    dot.className = 'rain-dot';
+                                    if (i % 2 === 0) {
+                                        dot.classList.add('blue');
+                                    }
+                                    dot.style.left = `${Math.random() * 100}%`;
+                                    dot.style.animationDelay = `${Math.random()}s`;
+                                    dot.style.animationDuration = `${0.5 + Math.random()}s`;
+                                    rainDots.appendChild(dot);
+                                }
+                            }
+                        }
+                    }
+                });
+                // APIデータ反映後に雨ドットを再初期化
+                addRainDots();
+            })
+            .catch(error => {
+                console.error('天気データ取得エラー:', error);
+                document.querySelectorAll('td').forEach(cell => {
+                    const weatherCode = cell.getAttribute('data-weather');
+                    setBackgroundColor(cell, weatherCode);
+                    cell.querySelector('.temperature').textContent = '--℃';
+                });
+                addRainDots();
+            });
+    </script>
+</body>
+</html>
