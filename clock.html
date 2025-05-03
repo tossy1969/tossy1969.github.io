@@ -12,19 +12,36 @@
             margin: 0;
             background-color: black;
         }
+        #container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #date {
+            width: 400px;
+            height: 50px;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
         #clock {
             width: 600px;
             height: 200px;
             display: flex;
             align-items: center;
-            justify-content: space-between; /* 均等間隔 */
+            justify-content: space-between;
         }
         .digit {
             width: 120px;
             height: 200px;
             position: relative;
         }
-        .colon {
+        .date-digit {
+            width: 40px;
+            height: 50px;
+            position: relative;
+        }
+        .colon, .dot {
             width: 20px;
             height: 200px;
             display: flex;
@@ -32,57 +49,105 @@
             justify-content: center;
             align-items: center;
         }
+        .date-dot {
+            width: 10px;
+            height: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
         .colon-dot {
-            width: 20px; /* 2倍の大きさ */
+            width: 20px;
             height: 20px;
             background-color: white;
             border-radius: 50%;
             margin: 30px 0;
         }
-        .colon.hidden .colon-dot {
-            background-color: #222222; /* 消灯時はダークグレー */
+        .date-dot-dot {
+            width: 5px;
+            height: 5px;
+            background-color: orange;
+            border-radius: 50%;
+            margin: 5px 0;
+        }
+        .colon.hidden .colon-dot, .dot.hidden .date-dot-dot {
+            background-color: #333333; /* 消灯時グレー */
         }
         .segment {
             fill: white;
             stroke: white;
-            stroke-width: 4; /* 太めに */
+            stroke-width: 4;
+        }
+        .date-segment {
+            fill: orange;
+            stroke: orange;
+            stroke-width: 2;
         }
         .segment.off {
-            fill: #222222; /* 消灯セグメントはダークグレー */
-            stroke: #222222;
+            fill: #333333; /* 時刻の消灯セグメントを#333に */
+            stroke: #333333;
+        }
+        .date-segment.off {
+            fill: #333333; /* 日付の消灯セグメントも#333 */
+            stroke: #333333;
         }
     </style>
 </head>
 <body>
-    <div id="clock">
-        <div class="digit" id="digit1"></div>
-        <div class="digit" id="digit2"></div>
-        <div class="colon" id="colon">
-            <div class="colon-dot"></div>
-            <div class="colon-dot"></div>
+    <div id="container">
+        <div id="date">
+            <div class="date-digit" id="date1"></div>
+            <div class="date-digit" id="date2"></div>
+            <div class="date-digit" id="date3"></div>
+            <div class="date-digit" id="date4"></div>
+            <div class="date-dot" id="dot1">
+                <div class="date-dot-dot"></div>
+            </div>
+            <div class="date-digit" id="date5"></div>
+            <div class="date-digit" id="date6"></div>
+            <div class="date-dot" id="dot2">
+                <div class="date-dot-dot"></div>
+            </div>
+            <div class="date-digit" id="date7"></div>
+            <div class="date-digit" id="date8"></div>
         </div>
-        <div class="digit" id="digit3"></div>
-        <div class="digit" id="digit4"></div>
+        <div id="clock">
+            <div class="digit" id="digit1"></div>
+            <div class="digit" id="digit2"></div>
+            <div class="colon" id="colon">
+                <div class="colon-dot"></div>
+                <div class="colon-dot"></div>
+            </div>
+            <div class="digit" id="digit3"></div>
+            <div class="digit" id="digit4"></div>
+        </div>
     </div>
 
     <script>
-        // 7セグメントのSVG定義（高さ200px、セグメントを3倍太く）
+        // 時刻用7セグメントSVG（高さ200px）
         const segmentSVG = (id) => `
             <svg width="120" height="200" viewBox="0 0 120 200">
-                <!-- セグメントa (上) -->
                 <polygon class="segment" id="${id}-a" points="30,10 90,10 80,25 40,25"/>
-                <!-- セグメントb (右上) -->
                 <polygon class="segment" id="${id}-b" points="95,30 110,40 110,90 95,100"/>
-                <!-- セグメントc (右下) -->
                 <polygon class="segment" id="${id}-c" points="95,110 110,120 110,170 95,180"/>
-                <!-- セグメントd (下) -->
                 <polygon class="segment" id="${id}-d" points="30,190 90,190 80,175 40,175"/>
-                <!-- セグメントe (左下) -->
                 <polygon class="segment" id="${id}-e" points="10,110 25,120 25,170 10,180"/>
-                <!-- セグメントf (左上) -->
                 <polygon class="segment" id="${id}-f" points="10,30 25,40 25,90 10,100"/>
-                <!-- セグメントg (中) -->
                 <polygon class="segment" id="${id}-g" points="30,95 90,95 80,110 40,110"/>
+            </svg>
+        `;
+
+        // 日付用7セグメントSVG（高さ50px）
+        const dateSegmentSVG = (id) => `
+            <svg width="40" height="50" viewBox="0 0 40 50">
+                <polygon class="date-segment" id="${id}-a" points="10,3 30,3 27,7 13,7"/>
+                <polygon class="date-segment" id="${id}-b" points="32,8 36,10 36,23 32,25"/>
+                <polygon class="date-segment" id="${id}-c" points="32,27 36,29 36,42 32,44"/>
+                <polygon class="date-segment" id="${id}-d" points="10,47 30,47 27,43 13,43"/>
+                <polygon class="date-segment" id="${id}-e" points="4,27 8,29 8,42 4,44"/>
+                <polygon class="date-segment" id="${id}-f" points="4,8 8,10 8,23 4,25"/>
+                <polygon class="date-segment" id="${id}-g" points="10,24 30,24 27,28 13,28"/>
             </svg>
         `;
 
@@ -90,7 +155,7 @@
         const patterns = {
             '0': ['a', 'b', 'c', 'd', 'e', 'f'],
             '1': ['b', 'c'],
-            '2': ['a', 'b', 'd', 'e', 'g'],
+            '2': ['a', 'b', 'd', 'e', 'g'], // 2の表示を再確認
             '3': ['a', 'b', 'c', 'd', 'g'],
             '4': ['b', 'c', 'f', 'g'],
             '5': ['a', 'c', 'd', 'f', 'g'],
@@ -101,44 +166,124 @@
         };
 
         // SVGを各桁に設定
-        document.getElementById('digit1').innerHTML = segmentSVG('d1');
-        document.getElementById('digit2').innerHTML = segmentSVG('d2');
-        document.getElementById('digit3').innerHTML = segmentSVG('d3');
-        document.getElementById('digit4').innerHTML = segmentSVG('d4');
+        ['digit1', 'digit2', 'digit3', 'digit4'].forEach(id => {
+            document.getElementById(id).innerHTML = segmentSVG(id.replace('digit', 'd'));
+        });
+        ['date1', 'date2', 'date3', 'date4', 'date5', 'date6', 'date7', 'date8'].forEach(id => {
+            document.getElementById(id).innerHTML = dateSegmentSVG(id);
+        });
 
+        // ランダムシャッフル表示（1コマ）
+        function shuffleSegments() {
+            const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+            // 時刻のシャッフル
+            ['d1', 'd2', 'd3', 'd4'].forEach(digitId => {
+                segments.forEach(segment => {
+                    const element = document.getElementById(`${digitId}-${segment}`);
+                    if (Math.random() > 0.5) {
+                        element.style.fill = 'white';
+                        element.style.stroke = 'white';
+                        element.classList.remove('off');
+                    } else {
+                        element.style.fill = '#333333';
+                        element.style.stroke = '#333333';
+                        element.classList.add('off');
+                    }
+                });
+            });
+            // 日付のシャッフル
+            ['date1', 'date2', 'date3', 'date4', 'date5', 'date6', 'date7', 'date8'].forEach(digitId => {
+                segments.forEach(segment => {
+                    const element = document.getElementById(`${digitId}-${segment}`);
+                    if (Math.random() > 0.5) {
+                        element.style.fill = 'orange';
+                        element.style.stroke = 'orange';
+                        element.classList.remove('off');
+                    } else {
+                        element.style.fill = '#333333';
+                        element.style.stroke = '#333333';
+                        element.classList.add('off');
+                    }
+                });
+            });
+            // コロンとドットのシャッフル
+            document.getElementById('colon').classList.toggle('hidden', Math.random() > 0.5);
+            document.getElementById('dot1').classList.toggle('hidden', Math.random() > 0.5);
+            document.getElementById('dot2').classList.toggle('hidden', Math.random() > 0.5);
+        }
+
+        // 時刻と日付の更新
         function updateClock() {
             const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0'); // 24時間制
+            const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
+            const year = String(now.getFullYear());
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
             const time = hours + minutes;
+            const date = year + month + day;
 
-            // 各桁を更新
+            // 時刻の更新
             ['d1', 'd2', 'd3', 'd4'].forEach((digitId, index) => {
                 const digit = time[index];
                 const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
                 segments.forEach(segment => {
                     const element = document.getElementById(`${digitId}-${segment}`);
-                    if (patterns[digit].includes(segment)) {
-                        element.style.fill = 'white';
-                        element.style.stroke = 'white';
-                        element.classList.remove('off');
-                    } else {
-                        element.style.fill = '#222222'; // 消灯はダークグレー
-                        element.style.stroke = '#222222';
-                        element.classList.add('off');
+                    if (element) {
+                        if (patterns[digit].includes(segment)) {
+                            element.style.fill = 'white';
+                            element.style.stroke = 'white';
+                            element.classList.remove('off');
+                        } else {
+                            element.style.fill = '#333333';
+                            element.style.stroke = '#333333';
+                            element.classList.add('off');
+                        }
                     }
                 });
             });
 
-            // コロンの点滅
+            // 日付の更新
+            ['date1', 'date2', 'date3', 'date4', 'date5', 'date6', 'date7', 'date8'].forEach((digitId, index) => {
+                const digit = date[index];
+                const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+                segments.forEach(segment => {
+                    const element = document.getElementById(`${digitId}-${segment}`);
+                    if (element) {
+                        if (patterns[digit].includes(segment)) {
+                            element.style.fill = 'orange';
+                            element.style.stroke = 'orange';
+                            element.classList.remove('off');
+                        } else {
+                            element.style.fill = '#333333';
+                            element.style.stroke = '#333333';
+                            element.classList.add('off');
+                        }
+                    }
+                });
+            });
+
+            // コロンとドットの点滅
             const colon = document.getElementById('colon');
+            const dot1 = document.getElementById('dot1');
+            const dot2 = document.getElementById('dot2');
             colon.classList.toggle('hidden');
+            dot1.classList.toggle('hidden');
+            dot2.classList.toggle('hidden');
         }
 
-        // 初回更新
-        updateClock();
-        // 1秒ごとに更新
-        setInterval(updateClock, 1000);
+        // シャッフルアニメーション（0.1秒×5コマ）
+        let shuffleCount = 0;
+        const shuffleInterval = setInterval(() => {
+            shuffleSegments();
+            shuffleCount++;
+            if (shuffleCount >= 5) {
+                clearInterval(shuffleInterval);
+                updateClock();
+                // 1秒ごとに更新
+                setInterval(updateClock, 1000);
+            }
+        }, 100);
     </script>
 </body>
 </html>
