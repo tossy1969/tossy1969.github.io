@@ -21,7 +21,7 @@
     </style>
 </head>
 <body>
-    <iframe id="displayFrame" src="/weather.html"></iframe>
+    <iframe id="displayFrame" src="/weather.html" allow="autoplay"></iframe>
     <audio id="ringAudio" src="/ring.mp3" preload="auto"></audio>
 
     <script>
@@ -37,14 +37,16 @@
         // ユーザー操作を検知してオートプレイを有効化
         let isUserInteracted = false;
         document.body.addEventListener('click', () => {
-            isUserInteracted = true;
-            console.log('ユーザー操作検知: オートプレイ許可');
-            // テスト再生（無音）でオートプレイを有効化
-            audio.play().then(() => {
-                audio.pause();
-                audio.currentTime = 0;
-                console.log('オートプレイ有効化成功');
-            }).catch(e => console.error('オートプレイ有効化失敗:', e));
+            if (!isUserInteracted) {
+                isUserInteracted = true;
+                console.log('ユーザー操作検知: オートプレイ許可');
+                // テスト再生でオートプレイを有効化
+                audio.play().then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    console.log('オートプレイ有効化成功');
+                }).catch(e => console.error('オートプレイ有効化失敗:', e));
+            }
         });
 
         // 現在の時間を取得
@@ -102,29 +104,47 @@
             setTimeout(checkTime, 60 * 1000); // 1分ごとにチェック
         }
 
-        // ring.mp3の再生チェック
-        function checkRingTime() {
-            const { timeString } = getCurrentTime();
-            console.log(`再生チェック: 現在時刻=${timeString}, 対象=${ringTimes.join(', ')}`);
-            if (ringTimes.includes(timeString)) {
-                console.log(`再生試行: ${timeString}`);
+        // ring.mp3を再生する関数
+        function playRing() {
+            audio.currentTime = 0; // 最初から再生
+            audio.play().then(() => {
+                console.log(`ring.mp3再生成功: ${getCurrentTime().timeString}`);
+            }).catch(e => {
+                console.error(`ring.mp3再生失敗: ${getCurrentTime().timeString}, エラー:`, e);
+                alert('音声の再生に失敗しました。ブラウザの設定を確認してください。');
+            });
+        }
+
+        // 次の再生時刻までの時間を計算してタイマーを設定
+        function scheduleNextRing() {
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            const ringMinutes = ringTimes.map(time => {
+                const [hours, minutes] = time.split(':').map(Number);
+                return hours * 60 + minutes;
+            });
+
+            // 次の再生時刻を計算
+            let nextRing = ringMinutes.find(m => m > currentMinutes) || ringMinutes[0] + 24 * 60;
+            const minutesToNext = (nextRing - currentMinutes + 24 * 60) % (24 * 60);
+            const msToNext = minutesToNext * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
+
+            console.log(`次の再生予定: ${ringTimes[ringMinutes.indexOf(nextRing) % ringTimes.length]}, ${msToNext}ms後`);
+
+            setTimeout(() => {
                 if (isUserInteracted) {
-                    audio.currentTime = 0; // 最初から再生
-                    audio.play().then(() => {
-                        console.log(`ring.mp3再生成功: ${timeString}`);
-                    }).catch(e => {
-                        console.error(`ring.mp3再生失敗: ${timeString}, エラー:`, e);
-                    });
+                    playRing();
                 } else {
-                    console.warn(`ring.mp3再生スキップ: ユーザー操作未検知 (${timeString})`);
+                    console.warn('ユーザー操作未検知: 再生スキップ');
+                    alert('音声を再生するには画面をクリックしてください。');
                 }
-            }
+                scheduleNextRing(); // 次の再生をスケジュール
+            }, msToNext);
         }
 
         // 初期化
         function init() {
             // ring.mp3のロード確認
-            audio.load();
             audio.onloadeddata = () => console.log('ring.mp3ロード成功');
             audio.onerror = () => console.error('ring.mp3ロード失敗');
 
@@ -140,10 +160,8 @@
             }
             // 時間帯チェック開始
             checkTime();
-            // 10秒ごとにring.mp3の再生をチェック
-            setInterval(checkRingTime, 10 * 1000);
-            // 初回チェック
-            checkRingTime();
+            // 再生スケジュール開始
+            scheduleNextRing();
         }
 
         // ページ読み込み時に初期化
