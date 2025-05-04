@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Dynamic Display</title>
+    <style>
+        body {
+            background-color: black;
+            margin: 0;
+            overflow: hidden;
+        }
+        iframe {
+            width: 100vw;
+            height: 100vh;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <iframe id="displayFrame" src="/weather.html" allow="autoplay"></iframe>
+    <audio id="ringAudio" src="/ring.mp3" preload="auto" muted></audio>
+
+    <script>
+        console.log("index.html読み込み: Version 1.0.9");
+        const frame = document.getElementById('displayFrame');
+        const audio = document.getElementById('ringAudio');
+        let isClockOnly = false;
+        let currentIndex = 0;
+        const pages = ['/weather.html', '/clock.html', '/metro.html', '/clock.html'];
+        const displayDurations = [20000, 5000, 30000, 5000]; // 20秒, 5秒, 30秒, 5秒
+
+        // 現在の時間を取得
+        function getCurrentTime() {
+            const now = new Date();
+            return {
+                hours: now.getHours(),
+                minutes: now.getMinutes(),
+                timeString: now.toTimeString().slice(0, 5) // HH:MM形式
+            };
+        }
+
+        // 0:30〜4:30の時間帯かどうかを判定
+        function isClockOnlyTime() {
+            const { hours, minutes } = getCurrentTime();
+            const totalMinutes = hours * 60 + minutes;
+            const start = 0 * 60 + 30; // 0:30
+            const end = 4 * 60 + 30;   // 4:30
+            return totalMinutes >= start && totalMinutes < end;
+        }
+
+        // 指定時間待機するユーティリティ
+        function wait(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // ページ切り替え処理
+        async function switchPage() {
+            if (isClockOnly) {
+                const timestamp = Date.now();
+                frame.src = `/clock.html?t=${timestamp}`;
+                console.log(`Clock専用時間帯: ${frame.src}`);
+                return;
+            }
+            currentIndex = (currentIndex + 1) % pages.length;
+            const timestamp = Date.now();
+            frame.src = `${pages[currentIndex]}?t=${timestamp}`;
+            console.log(`ページ切り替え: ${frame.src}, 表示時間: ${displayDurations[currentIndex]}ms`);
+            await wait(displayDurations[currentIndex]);
+            switchPage(); // 次のページへ
+        }
+
+        // 時間帯のチェック
+        function checkTime() {
+            const wasClockOnly = isClockOnly;
+            isClockOnly = isClockOnlyTime();
+            if (isClockOnly && !wasClockOnly) {
+                const timestamp = Date.now();
+                frame.src = `/clock.html?t=${timestamp}`;
+                console.log(`Clock専用時間帯開始: ${frame.src}`);
+            } else if (!isClockOnly && wasClockOnly) {
+                currentIndex = -1; // 最初から
+                switchPage();
+            }
+            setTimeout(checkTime, 60 * 1000); // 1分ごとにチェック
+        }
+
+        // ring.mp3を再生する関数
+        function playRing() {
+            audio.currentTime = 0; // 最初から再生
+            audio.muted = true; // ミュートで再生開始
+            audio.play().then(() => {
+                audio.muted = false; // 即座にアンミュート
+                console.log(`ring.mp3再生成功: ${getCurrentTime().timeString}`);
+            }).catch(e => {
+                console.error(`ring.mp3再生失敗: ${getCurrentTime().timeString}, エラー:`, e);
+            });
+        }
+
+        // 初期化
+        function init() {
+            // ring.mp3のロード確認
+            audio.onloadeddata = () => console.log('ring.mp3ロード成功');
+            audio.onerror = () => console.error('ring.mp3ロード失敗');
+
+            // 初回時間帯チェック
+            isClockOnly = isClockOnlyTime();
+            // 初回ページ設定
+            const timestamp = Date.now();
+            frame.src = isClockOnly ? `/clock.html?t=${timestamp}` : `/weather.html?t=${timestamp}`;
+            console.log(`初期ページ: ${frame.src}`);
+            // ページ切り替え開始（非Clock時間帯のみ）
+            if (!isClockOnly) {
+                switchPage();
+            }
+            // 時間帯チェック開始
+            checkTime();
+            // 初回読み込み時に音声を再生
+            playRing();
+        }
+
+        // ページ読み込み時に初期化
+        window.onload = init;
+    </script>
+</body>
+</html>
