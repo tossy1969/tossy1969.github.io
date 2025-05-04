@@ -22,7 +22,7 @@
 </head>
 <body>
     <iframe id="displayFrame" src="/weather.html" allow="autoplay"></iframe>
-    <audio id="ringAudio" src="/ring.mp3" preload="auto"></audio>
+    <audio id="ringAudio" src="/ring.mp3" preload="auto" muted></audio>
 
     <script>
         console.log("index.html読み込み: Version 1.0.9");
@@ -33,21 +33,6 @@
         const pages = ['/weather.html', '/clock.html', '/metro.html', '/clock.html'];
         const displayDurations = [20000, 5000, 30000, 5000]; // 20秒, 5秒, 30秒, 5秒
         const ringTimes = ['09:00', '12:00', '15:00', '18:00', '21:00'];
-
-        // ユーザー操作を検知してオートプレイを有効化
-        let isUserInteracted = false;
-        document.body.addEventListener('click', () => {
-            if (!isUserInteracted) {
-                isUserInteracted = true;
-                console.log('ユーザー操作検知: オートプレイ許可');
-                // テスト再生でオートプレイを有効化
-                audio.play().then(() => {
-                    audio.pause();
-                    audio.currentTime = 0;
-                    console.log('オートプレイ有効化成功');
-                }).catch(e => console.error('オートプレイ有効化失敗:', e));
-            }
-        });
 
         // 現在の時間を取得
         function getCurrentTime() {
@@ -104,15 +89,33 @@
             setTimeout(checkTime, 60 * 1000); // 1分ごとにチェック
         }
 
-        // ring.mp3を再生する関数
+        // ring.mp3を再生する関数（再試行ロジック付き）
         function playRing() {
             audio.currentTime = 0; // 最初から再生
-            audio.play().then(() => {
-                console.log(`ring.mp3再生成功: ${getCurrentTime().timeString}`);
-            }).catch(e => {
-                console.error(`ring.mp3再生失敗: ${getCurrentTime().timeString}, エラー:`, e);
-                alert('音声の再生に失敗しました。ブラウザの設定を確認してください。');
-            });
+            audio.muted = true; // ミュートで再生開始
+            let retries = 0;
+            const maxRetries = 5;
+            const retryInterval = 100; // 100msごとに再試行
+
+            function attemptPlay() {
+                audio.play().then(() => {
+                    console.log(`ring.mp3再生成功: ${getCurrentTime().timeString}`);
+                    // 再生成功後、即座にアンミュート
+                    audio.muted = false;
+                }).catch(e => {
+                    console.error(`ring.mp3再生失敗: 試行${retries + 1}/${maxRetries}, エラー:`, e);
+                    if (retries < maxRetries) {
+                        retries++;
+                        setTimeout(attemptPlay, retryInterval);
+                    } else {
+                        console.error(`ring.mp3再生失敗: すべての再試行が失敗しました`);
+                        // アラートは控えめにする（ユーザー操作なしのため）
+                        console.warn('音声再生に失敗しました。ブラウザの自動再生設定を確認してください。');
+                    }
+                });
+            }
+
+            attemptPlay();
         }
 
         // 次の再生時刻までの時間を計算してタイマーを設定
@@ -132,12 +135,7 @@
             console.log(`次の再生予定: ${ringTimes[ringMinutes.indexOf(nextRing) % ringTimes.length]}, ${msToNext}ms後`);
 
             setTimeout(() => {
-                if (isUserInteracted) {
-                    playRing();
-                } else {
-                    console.warn('ユーザー操作未検知: 再生スキップ');
-                    alert('音声を再生するには画面をクリックしてください。');
-                }
+                playRing();
                 scheduleNextRing(); // 次の再生をスケジュール
             }, msToNext);
         }
