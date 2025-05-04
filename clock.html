@@ -92,10 +92,6 @@
             fill: #333333;
             stroke: #333333;
         }
-        .segment.hidden, .date-segment.hidden {
-            fill: black; /* 非表示用 */
-            stroke: black;
-        }
     </style>
 </head>
 <body>
@@ -188,12 +184,11 @@
                         if (Math.random() > 0.5) {
                             element.style.fill = 'white';
                             element.style.stroke = 'white';
-                            element.classList.remove('off', 'hidden');
+                            element.classList.remove('off');
                         } else {
                             element.style.fill = '#333333';
                             element.style.stroke = '#333333';
                             element.classList.add('off');
-                            element.classList.remove('hidden');
                         }
                     }
                 });
@@ -206,12 +201,11 @@
                         if (Math.random() > 0.5) {
                             element.style.fill = 'orange';
                             element.style.stroke = 'orange';
-                            element.classList.remove('off', 'hidden');
+                            element.classList.remove('off');
                         } else {
                             element.style.fill = '#333333';
                             element.style.stroke = '#333333';
                             element.classList.add('off');
-                            element.classList.remove('hidden');
                         }
                     }
                 });
@@ -237,28 +231,32 @@
             ['d1', 'd2', 'd3', 'd4'].forEach((digitId, index) => {
                 const digit = time[index];
                 const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
-                // 00:00～09:59の場合、最初の桁（d1）が「0」なら非表示
-                const isFirstDigitHidden = (digitId === 'd1' && time[0] === '0' && parseInt(time[1]) <= 9);
-                segments.forEach(segment => {
-                    const element = document.getElementById(`${digitId}-${segment}`);
-                    if (element) {
-                        if (isFirstDigitHidden) {
-                            element.style.fill = 'black';
-                            element.style.stroke = 'black';
-                            element.classList.add('hidden');
-                            element.classList.remove('off');
-                        } else if (patterns[digit].includes(segment)) {
-                            element.style.fill = 'white';
-                            element.style.stroke = 'white';
-                            element.classList.remove('off', 'hidden');
-                        } else {
+                // 00:00〜09:59のとき、一桁目の「0」を#333で表示
+                if (index === 0 && hours < 10 && digit === '0') {
+                    segments.forEach(segment => {
+                        const element = document.getElementById(`${digitId}-${segment}`);
+                        if (element) {
                             element.style.fill = '#333333';
                             element.style.stroke = '#333333';
                             element.classList.add('off');
-                            element.classList.remove('hidden');
                         }
-                    }
-                });
+                    });
+                } else {
+                    segments.forEach(segment => {
+                        const element = document.getElementById(`${digitId}-${segment}`);
+                        if (element) {
+                            if (patterns[digit].includes(segment)) {
+                                element.style.fill = 'white';
+                                element.style.stroke = 'white';
+                                element.classList.remove('off');
+                            } else {
+                                element.style.fill = '#333333';
+                                element.style.stroke = '#333333';
+                                element.classList.add('off');
+                            }
+                        }
+                    });
+                }
             });
 
             // 日付の更新
@@ -271,12 +269,11 @@
                         if (patterns[digit].includes(segment)) {
                             element.style.fill = 'orange';
                             element.style.stroke = 'orange';
-                            element.classList.remove('off', 'hidden');
+                            element.classList.remove('off');
                         } else {
                             element.style.fill = '#333333';
                             element.style.stroke = '#333333';
                             element.classList.add('off');
-                            element.classList.remove('hidden');
                         }
                     }
                 });
