@@ -10,7 +10,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #e0e0e0; /* 薄いグレー */
+            background-color: #e0e0e0;
             margin: 0;
             padding: 10px;
             display: flex;
@@ -34,43 +34,40 @@
             vertical-align: middle;
             border: 1px solid #ddd;
             padding: 0;
-            position: relative; /* 雨ドットの位置基準 */
+            position: relative;
         }
         .weather-icon {
             width: 180px;
             height: 180px;
             margin: 0 auto;
         }
-        /* 雲アイコンのグレーを濃く */
         td[data-weather="02d"] img.weather-icon,
         td[data-weather="03d"] img.weather-icon,
         td[data-weather="04d"] img.weather-icon {
             filter: contrast(1.2) brightness(0.9);
         }
-        /* 晴れアイコンの太陽の色を鮮やかに */
         td[data-weather="01d"] img.weather-icon,
         td[data-weather="01n"] img.weather-icon {
             filter: hue-rotate(-10deg) saturate(1.5);
         }
-        /* 雨ドットのスタイル */
         .rain-dots {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 180px; /* アイコン高さに合わせる */
-            z-index: 1; /* アイコンの上 */
-            pointer-events: none; /* クリックを妨げない */
+            height: 180px;
+            z-index: 1;
+            pointer-events: none;
         }
         .rain-dot {
             position: absolute;
             width: 4px;
             height: 4px;
             border-radius: 50%;
-            background-color: #ffffff; /* 白 */
+            background-color: #ffffff;
         }
         .rain-dot.blue {
-            background-color: #add8e6; /* 水色 */
+            background-color: #add8e6;
         }
         .rain-dot {
             animation: fall linear infinite;
@@ -81,8 +78,8 @@
                 opacity: 1;
             }
             100% {
-                transform: translateY(180px); /* アイコン高さ分落下 */
-                opacity: 0.5; /* 自然な消滅 */
+                transform: translateY(180px);
+                opacity: 0.5;
             }
         }
         .time {
@@ -103,7 +100,7 @@
                 height: 140px;
             }
             .rain-dots {
-                height: 140px; /* メディアクエリに合わせる */
+                height: 140px;
             }
             .rain-dot {
                 animation: fall linear infinite;
@@ -169,17 +166,43 @@
 
     <script>
         // バージョン確認用ログ
-        console.log("Version: 1.0.5");
+        console.log("Version: 1.0.6");
 
-        // 現在時刻を取得し、次の「3時間ごとの時刻」に揃える
-        const now = new Date();
-        const hours = now.getHours();
-        const startHourOffset = Math.floor(hours / 3) * 3; // 0:00以降の不整合を防ぐ
-        const startHour = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startHourOffset, 0, 0);
+        // WMO天気コードをOpenWeatherMapアイコンにマッピング
+        const weatherCodeMap = {
+            0: '01', // 快晴
+            1: '02', // 晴れ
+            2: '03', // 一部曇り
+            3: '04', // 曇り
+            45: '50', // 霧
+            48: '50', // 霧（氷点下）
+            51: '09', // 小雨
+            53: '09', // 中雨
+            55: '10', // 強い雨
+            61: '10', // 雨
+            63: '10', // 中程度の雨
+            65: '10', // 強い雨
+            71: '13', // 雪
+            73: '13', // 中程度の雪
+            75: '13', // 強い雪
+            80: '09', // にわか雨
+            81: '10', // 強いシャワー
+            82: '10', // 非常に強いシャワー
+            95: '11', // 雷雨
+            96: '11', // 雷雨（軽い雹）
+            99: '11'  // 雷雨（強い雹）
+        };
+
+        // 昼夜を考慮したアイコンコードを取得
+        function getIconWithDayNight(wmoCode, hour) {
+            const baseIcon = weatherCodeMap[wmoCode] || '01';
+            const isDay = hour >= 6 && hour < 18; // 6:00-18:00を昼とする
+            return `${baseIcon}${isDay ? 'd' : 'n'}`;
+        }
 
         // 背景色を設定する関数
         function setBackgroundColor(cell, icon) {
-            console.log(`背景色設定: セル=${cell.querySelector('.time').textContent}, アイコン=${icon}`); // デバッグ用
+            console.log(`背景色設定: セル=${cell.querySelector('.time').textContent}, アイコン=${icon}`);
             if (['01d', '01n'].includes(icon)) {
                 cell.style.backgroundColor = '#f7b731'; // 晴れ：黄色寄り
                 cell.querySelector('.time').style.color = '#fff';
@@ -198,13 +221,11 @@
             rainCells.forEach(cell => {
                 let rainDots = cell.querySelector('.rain-dots');
                 if (!rainDots) {
-                    // .rain-dotsが存在しない場合、動的に追加
                     rainDots = document.createElement('div');
                     rainDots.className = 'rain-dots';
                     cell.insertBefore(rainDots, cell.firstChild);
                 }
-                rainDots.innerHTML = ''; // 既存ドットをクリア
-                // 10個のドットを追加
+                rainDots.innerHTML = '';
                 for (let i = 0; i < 10; i++) {
                     const dot = document.createElement('span');
                     dot.className = 'rain-dot';
@@ -219,9 +240,105 @@
             });
         }
 
+        // 現在時刻を取得し、次の「3時間ごとの時刻」に揃える
+        function getStartHour() {
+            const now = new Date();
+            const hours = now.getHours();
+            const startHourOffset = Math.floor(hours / 3) * 3;
+            return new Date(now.getFullYear(), now.getMonth(), now.getDate(), startHourOffset, 0, 0);
+        }
+
+        // 天気データを取得して更新
+        function fetchWeather() {
+            const timestamp = Date.now();
+            const today = new Date();
+            const startDate = today.toISOString().split('T')[0];
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=35.7076&longitude=139.6637&hourly=weathercode&timezone=Asia%2FTokyo&start_date=${startDate}&end_date=${startDate}&cache_bust=${timestamp}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('APIレスポンス:', data);
+                    const cells = document.querySelectorAll('td');
+                    const hourlyData = data.hourly;
+                    if (!hourlyData || !hourlyData.time || !hourlyData.weathercode) {
+                        throw new Error('不正なAPIレスポンス: 必要なデータが欠落');
+                    }
+                    const times = hourlyData.time;
+                    const weatherCodes = hourlyData.weathercode;
+
+                    // 開始時刻以降の3時間ごとのデータを抽出
+                    const startHour = getStartHour();
+                    const forecastList = [];
+                    const startTimeMs = startHour.getTime();
+                    for (let i = 0; i < times.length; i++) {
+                        const forecastTime = new Date(times[i]);
+                        const diffHours = (forecastTime - startTimeMs) / (1000 * 60 * 60);
+                        if (diffHours >= 0 && diffHours % 3 === 0 && forecastList.length < 8) {
+                            forecastList.push({
+                                time: forecastTime,
+                                weathercode: weatherCodes[i]
+                            });
+                        }
+                    }
+                    console.log('抽出データ:', forecastList);
+
+                    cells.forEach((cell, index) => {
+                        if (forecastList[index]) {
+                            const item = forecastList[index];
+                            const hour = item.time.getHours();
+                            const icon = getIconWithDayNight(item.weathercode, hour);
+                            console.log(`セル${index}: WMOコード=${item.weathercode}, アイコン=${icon}, 時刻=${hour}:00`);
+                            const time = item.time;
+                            const hours = time.getHours().toString().padStart(2, '0');
+                            cell.querySelector('img').src = `https://openweathermap.org/img/wn/${icon}@2x.png?t=${timestamp}`;
+                            cell.querySelector('img').alt = item.weathercode in weatherCodeMap ? '天気' : '不明';
+                            cell.querySelector('.time').textContent = `${hours}:00`;
+                            cell.setAttribute('data-weather', icon);
+                            setBackgroundColor(cell, icon);
+
+                            // 雨ドットの更新
+                            let rainDots = cell.querySelector('.rain-dots');
+                            if (!rainDots && ['09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n'].includes(icon)) {
+                                rainDots = document.createElement('div');
+                                rainDots.className = 'rain-dots';
+                                cell.insertBefore(rainDots, cell.firstChild);
+                            }
+                            if (rainDots) {
+                                rainDots.innerHTML = '';
+                                if (['09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n'].includes(icon)) {
+                                    for (let i = 0; i < 10; i++) {
+                                        const dot = document.createElement('span');
+                                        dot.className = 'rain-dot';
+                                        if (i % 2 === 0) {
+                                            dot.classList.add('blue');
+                                        }
+                                        dot.style.left = `${Math.random() * 100}%`;
+                                        dot.style.animationDelay = `${Math.random()}s`;
+                                        dot.style.animationDuration = `${0.5 + Math.random()}s`;
+                                        rainDots.appendChild(dot);
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    // APIデータ反映後に雨ドットを再初期化
+                    addRainDots();
+                })
+                .catch(error => {
+                    console.error('天気データ取得エラー:', error);
+                    document.querySelectorAll('td').forEach(cell => {
+                        const weatherCode = cell.getAttribute('data-weather');
+                        setBackgroundColor(cell, weatherCode);
+                        addRainDots();
+                    });
+                });
+        }
+
         // 各セルの時刻を初期化し、静的データの背景色を設定
         document.querySelectorAll('td').forEach(cell => {
             const offset = parseInt(cell.querySelector('.time').getAttribute('data-hour'));
+            const startHour = getStartHour();
             const time = new Date(startHour.getTime() + offset * 60 * 60 * 1000);
             const hours = time.getHours().toString().padStart(2, '0');
             cell.querySelector('.time').textContent = `${hours}:00`;
@@ -232,113 +349,11 @@
         // 雨ドットを初期化
         addRainDots();
 
-        // WMO天気コードをOpenWeatherMapアイコンにマッピング
-        const weatherCodeMap = {
-            0: '01d', // 快晴
-            1: '02d', // 晴れ
-            2: '03d', // 一部曇り
-            3: '04d', // 曇り
-            45: '50d', // 霧
-            48: '50d', // 霧（氷点下）
-            51: '09d', // 小雨
-            53: '09d', // 中雨
-            55: '10d', // 強い雨
-            61: '10d', // 雨
-            63: '10d', // 中程度の雨
-            65: '10d', // 強い雨
-            71: '13d', // 雪
-            73: '13d', // 中程度の雪
-            75: '13d', // 強い雪
-            80: '09d', // にわか雨
-            81: '10d', // 強いシャワー
-            82: '10d', // 非常に強いシャワー
-            95: '11d', // 雷雨
-            96: '11d', // 雷雨（軽い雹）
-            99: '11d'  // 雷雨（強い雹）
-        };
+        // 初回データ取得
+        fetchWeather();
 
-        // Open-Meteo APIで天気データを取得
-        const timestamp = Date.now();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const startDate = today.toISOString().split('T')[0];
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=35.7076&longitude=139.6637&hourly=weathercode&timezone=Asia%2FTokyo&start_date=${startDate}&end_date=${startDate}&cache_bust=${timestamp}`;
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                console.log('APIレスポンス:', data); // デバッグ用
-                const cells = document.querySelectorAll('td');
-                const hourlyData = data.hourly;
-                if (!hourlyData || !hourlyData.time || !hourlyData.weathercode) {
-                    throw new Error('不正なAPIレスポンス: 必要なデータが欠落');
-                }
-                const times = hourlyData.time;
-                const weatherCodes = hourlyData.weathercode;
-
-                // 開始時刻以降の3時間ごとのデータを抽出
-                const forecastList = [];
-                const startTimeMs = startHour.getTime();
-                for (let i = 0; i < times.length; i++) {
-                    const forecastTime = new Date(times[i]);
-                    const diffHours = (forecastTime - startTimeMs) / (1000 * 60 * 60);
-                    if (diffHours >= 0 && diffHours % 3 === 0 && forecastList.length < 8) {
-                        forecastList.push({
-                            time: forecastTime,
-                            weathercode: weatherCodes[i]
-                        });
-                    }
-                }
-                console.log('抽出データ:', forecastList); // デバッグ用
-
-                cells.forEach((cell, index) => {
-                    if (forecastList[index]) {
-                        const item = forecastList[index];
-                        const icon = weatherCodeMap[item.weathercode] || 'unknown'; // デフォルトは不明
-                        console.log(`セル${index}: WMOコード=${item.weathercode}, アイコン=${icon}`); // デバッグ用
-                        const time = item.time;
-                        const hours = time.getHours().toString().padStart(2, '0');
-                        cell.querySelector('img').src = icon === 'unknown' ? 'https://openweathermap.org/img/wn/01d@2x.png' : `https://openweathermap.org/img/wn/${icon}@2x.png?t=${timestamp}`;
-                        cell.querySelector('img').alt = item.weathercode in weatherCodeMap ? '天気' : '不明';
-                        cell.querySelector('.time').textContent = `${hours}:00`;
-                        cell.setAttribute('data-weather', icon);
-                        setBackgroundColor(cell, icon);
-                        // 雨ドットの更新
-                        let rainDots = cell.querySelector('.rain-dots');
-                        if (!rainDots && ['09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n'].includes(icon)) {
-                            rainDots = document.createElement('div');
-                            rainDots.className = 'rain-dots';
-                            cell.insertBefore(rainDots, cell.firstChild);
-                        }
-                        if (rainDots) {
-                            rainDots.innerHTML = ''; // 既存ドットをクリア
-                            if (['09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n'].includes(icon)) {
-                                for (let i = 0; i < 10; i++) {
-                                    const dot = document.createElement('span');
-                                    dot.className = 'rain-dot';
-                                    if (i % 2 === 0) {
-                                        dot.classList.add('blue');
-                                    }
-                                    dot.style.left = `${Math.random() * 100}%`;
-                                    dot.style.animationDelay = `${Math.random()}s`;
-                                    dot.style.animationDuration = `${0.5 + Math.random()}s`;
-                                    rainDots.appendChild(dot);
-                                }
-                            }
-                        }
-                    }
-                });
-                // APIデータ反映後に雨ドットを再初期化
-                addRainDots();
-            })
-            .catch(error => {
-                console.error('天気データ取得エラー:', error);
-                // エラー時は静的データの背景色とアイコンを保持
-                document.querySelectorAll('td').forEach(cell => {
-                    const weatherCode = cell.getAttribute('data-weather');
-                    setBackgroundColor(cell, weatherCode);
-                    // 雨ドットを再初期化
-                    addRainDots();
-                });
-            });
+        // 1時間ごとにデータ更新
+        setInterval(fetchWeather, 60 * 60 * 1000);
     </script>
 </body>
 </html>
