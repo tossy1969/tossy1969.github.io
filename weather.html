@@ -166,7 +166,15 @@
 
     <script>
         // バージョン確認用ログ
-        console.log("Version: 1.0.7");
+        console.log("Version: 1.0.8");
+
+        // UUID生成関数（キャッシュバスター用）
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
 
         // WMO天気コードをOpenWeatherMapアイコンにマッピング
         const weatherCodeMap = {
@@ -253,10 +261,14 @@
         // 天気データを取得して更新
         function fetchWeather(retryCount = 0) {
             const maxRetries = 3;
-            const timestamp = Math.random().toString(36).substring(2); // ランダムキャッシュバスター
+            const cacheBuster = generateUUID();
             const today = new Date();
             const startDate = today.toISOString().split('T')[0];
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=35.7076&longitude=139.6637&hourly=weathercode&timezone=Asia%2FTokyo&start_date=${startDate}&end_date=${startDate}&cache_bust=${timestamp}`;
+            // Open-Meteo API（デフォルト）
+            let url = `https://api.open-meteo.com/v1/forecast?latitude=35.7076&longitude=139.6637&hourly=weathercode&timezone=Asia%2FTokyo&start_date=${startDate}&end_date=${startDate}&cache_buster=${cacheBuster}`;
+            // OpenWeatherMap API（コメントアウト、必要ならAPIキーを設定）
+            // const apiKey = 'YOUR_OPENWEATHERMAP_API_KEY';
+            // let url = `https://api.openweathermap.org/data/2.5/forecast?lat=35.7076&lon=139.6637&appid=${apiKey}&cache_buster=${cacheBuster}`;
 
             console.log('Fetching API:', url);
             fetch(url)
@@ -267,6 +279,9 @@
                 .then(data => {
                     console.log('APIレスポンス:', data);
                     const cells = document.querySelectorAll('td');
+                    let forecastList = [];
+
+                    // Open-Meteoの場合
                     const hourlyData = data.hourly;
                     if (!hourlyData || !hourlyData.time || !hourlyData.weathercode) {
                         throw new Error('不正なAPIレスポンス: 必要なデータが欠落');
@@ -274,8 +289,26 @@
                     const times = hourlyData.time;
                     const weatherCodes = hourlyData.weathercode;
 
+                    // OpenWeatherMapの場合（コメントアウト）
+                    /*
+                    const list = data.list;
+                    if (!list) {
+                        throw new Error('不正なAPIレスポンス: 必要なデータが欠落');
+                    }
+                    const times = list.map(item => item.dt_txt);
+                    const weatherCodes = list.map(item => {
+                        const weatherId = item.weather[0].id;
+                        // OpenWeatherMapの天気IDをWMOコードに簡易変換
+                        if (weatherId === 800) return 0; // 快晴
+                        if (weatherId === 801) return 1; // 晴れ
+                        if (weatherId === 802) return 2; // 一部曇り
+                        if (weatherId >= 803) return 3; // 曇り
+                        if (weatherId >= 500 && weatherId < 600) return 61; // 雨
+                        return 0; // デフォルト
+                    });
+                    */
+
                     const startHour = getStartHour();
-                    const forecastList = [];
                     const startTimeMs = startHour.getTime();
                     for (let i = 0; i < times.length; i++) {
                         const forecastTime = new Date(times[i]);
@@ -297,7 +330,7 @@
                             console.log(`セル${index}: WMOコード=${item.weathercode}, アイコン=${icon}, 時刻=${hour}:00`);
                             const time = item.time;
                             const hours = time.getHours().toString().padStart(2, '0');
-                            cell.querySelector('img').src = `https://openweathermap.org/img/wn/${icon}@2x.png?t=${timestamp}`;
+                            cell.querySelector('img').src = `https://openweathermap.org/img/wn/${icon}@2x.png?cb=${cacheBuster}`;
                             cell.querySelector('img').alt = item.weathercode in weatherCodeMap ? '天気' : '不明';
                             cell.querySelector('.time').textContent = `${hours}:00`;
                             cell.setAttribute('data-weather', icon);
@@ -361,8 +394,12 @@
         // 初回データ取得
         fetchWeather();
 
-        // 10分ごとにデータ更新（テスト用）
-        setInterval(fetchWeather, 10 * 60 * 1000);
+        // 10分ごとにデータ更新
+        console.log('Starting interval for fetchWeather');
+        setInterval(() => {
+            console.log('Interval triggered at:', new Date());
+            fetchWeather();
+        }, 10 * 60 * 1000);
     </script>
 </body>
 </html>
