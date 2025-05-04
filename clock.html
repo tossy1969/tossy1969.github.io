@@ -72,7 +72,7 @@
             margin: 5px 0;
         }
         .colon.hidden .colon-dot, .dot.hidden .date-dot-dot {
-            background-color: #333333; /* 消灯時グレー */
+            background-color: #333333;
         }
         .segment {
             fill: white;
@@ -85,12 +85,16 @@
             stroke-width: 2;
         }
         .segment.off {
-            fill: #333333; /* 時刻の消灯セグメントを#333に */
+            fill: #333333;
             stroke: #333333;
         }
         .date-segment.off {
-            fill: #333333; /* 日付の消灯セグメントも#333 */
+            fill: #333333;
             stroke: #333333;
+        }
+        .segment.hidden, .date-segment.hidden {
+            fill: black; /* 非表示用 */
+            stroke: black;
         }
     </style>
 </head>
@@ -155,7 +159,7 @@
         const patterns = {
             '0': ['a', 'b', 'c', 'd', 'e', 'f'],
             '1': ['b', 'c'],
-            '2': ['a', 'b', 'd', 'e', 'g'], // 2の表示を再確認
+            '2': ['a', 'b', 'd', 'e', 'g'],
             '3': ['a', 'b', 'c', 'd', 'g'],
             '4': ['b', 'c', 'f', 'g'],
             '5': ['a', 'c', 'd', 'f', 'g'],
@@ -180,14 +184,17 @@
             ['d1', 'd2', 'd3', 'd4'].forEach(digitId => {
                 segments.forEach(segment => {
                     const element = document.getElementById(`${digitId}-${segment}`);
-                    if (Math.random() > 0.5) {
-                        element.style.fill = 'white';
-                        element.style.stroke = 'white';
-                        element.classList.remove('off');
-                    } else {
-                        element.style.fill = '#333333';
-                        element.style.stroke = '#333333';
-                        element.classList.add('off');
+                    if (element) {
+                        if (Math.random() > 0.5) {
+                            element.style.fill = 'white';
+                            element.style.stroke = 'white';
+                            element.classList.remove('off', 'hidden');
+                        } else {
+                            element.style.fill = '#333333';
+                            element.style.stroke = '#333333';
+                            element.classList.add('off');
+                            element.classList.remove('hidden');
+                        }
                     }
                 });
             });
@@ -195,14 +202,17 @@
             ['date1', 'date2', 'date3', 'date4', 'date5', 'date6', 'date7', 'date8'].forEach(digitId => {
                 segments.forEach(segment => {
                     const element = document.getElementById(`${digitId}-${segment}`);
-                    if (Math.random() > 0.5) {
-                        element.style.fill = 'orange';
-                        element.style.stroke = 'orange';
-                        element.classList.remove('off');
-                    } else {
-                        element.style.fill = '#333333';
-                        element.style.stroke = '#333333';
-                        element.classList.add('off');
+                    if (element) {
+                        if (Math.random() > 0.5) {
+                            element.style.fill = 'orange';
+                            element.style.stroke = 'orange';
+                            element.classList.remove('off', 'hidden');
+                        } else {
+                            element.style.fill = '#333333';
+                            element.style.stroke = '#333333';
+                            element.classList.add('off');
+                            element.classList.remove('hidden');
+                        }
                     }
                 });
             });
@@ -227,17 +237,25 @@
             ['d1', 'd2', 'd3', 'd4'].forEach((digitId, index) => {
                 const digit = time[index];
                 const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+                // 00:00～09:59の場合、最初の桁（d1）が「0」なら非表示
+                const isFirstDigitHidden = (digitId === 'd1' && time[0] === '0' && parseInt(time[1]) <= 9);
                 segments.forEach(segment => {
                     const element = document.getElementById(`${digitId}-${segment}`);
                     if (element) {
-                        if (patterns[digit].includes(segment)) {
+                        if (isFirstDigitHidden) {
+                            element.style.fill = 'black';
+                            element.style.stroke = 'black';
+                            element.classList.add('hidden');
+                            element.classList.remove('off');
+                        } else if (patterns[digit].includes(segment)) {
                             element.style.fill = 'white';
                             element.style.stroke = 'white';
-                            element.classList.remove('off');
+                            element.classList.remove('off', 'hidden');
                         } else {
                             element.style.fill = '#333333';
                             element.style.stroke = '#333333';
                             element.classList.add('off');
+                            element.classList.remove('hidden');
                         }
                     }
                 });
@@ -253,11 +271,12 @@
                         if (patterns[digit].includes(segment)) {
                             element.style.fill = 'orange';
                             element.style.stroke = 'orange';
-                            element.classList.remove('off');
+                            element.classList.remove('off', 'hidden');
                         } else {
                             element.style.fill = '#333333';
                             element.style.stroke = '#333333';
                             element.classList.add('off');
+                            element.classList.remove('hidden');
                         }
                     }
                 });
