@@ -29,41 +29,41 @@
             font-family: 'Helvetica', 'Arial', sans-serif;
         }
         .title {
-            font-size: 30.8px; /* 22pxの140% */
+            font-size: 30.8px;
             font-weight: bold;
             color: #fff;
             text-align: center;
             margin-bottom: 10px;
-            height: 40px; /* フォントサイズ拡大に伴い調整 */
+            height: 40px;
             line-height: 40px;
         }
         .title .metro-mark {
-            font-size: 46.2px; /* 33pxの140% */
+            font-size: 46.2px;
             vertical-align: middle;
         }
         .table {
             display: grid;
-            gap: 0px; /* ヘッダーとテーブルの隙間を0pxに */
+            gap: 0px;
         }
         .row {
             display: grid;
-            grid-template-columns: 60px 205px 325px; /* 合計590px＋ギャップ10px＝600px */
+            grid-template-columns: 60px 205px 325px;
             gap: 5px;
         }
         .row.header-row {
-            min-height: 30px; /* ヘッダー行の高さをさらに縮小 */
+            min-height: 30px;
         }
         .row.table-row {
-            min-height: 80px; /* テーブル行の高さは維持 */
+            min-height: 80px;
         }
         .header {
             color: #fff;
-            font-size: 19.6px; /* 14pxの140% */
+            font-size: 19.6px;
             text-align: center;
             font-weight: bold;
-            margin: 0; /* マージンをゼロに */
-            padding: 0; /* パディングをゼロに */
-            line-height: 30px; /* ヘッダー行の高さに合わせる */
+            margin: 0;
+            padding: 0;
+            line-height: 30px;
         }
         .flap {
             height: 80px;
@@ -92,6 +92,7 @@
         .flap.status {
             width: 100%;
             font-size: 43px;
+            background-color: transparent; /* 背景を透明にし、背後のグレー(#333)を見せる */
         }
         .flap:not(.title) span {
             position: absolute;
@@ -334,7 +335,7 @@
 
         const titleData = {
             ja: "<span class='metro-mark'>Ⓜ️</span> 丸ノ内線・中野新橋駅出発",
-            en: "<span class='metro-mark'>Ⓜ️</span> MB05 NAKANO-SHIMBASHI"
+            en: "<span class='metro-mark'>Ⓜ️</span> MB05 NAKANO-SHIMBASHI STN"
         };
 
         const headerData = {
