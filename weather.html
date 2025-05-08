@@ -40,6 +40,14 @@
             width: 180px;
             height: 180px;
             margin: 0 auto;
+            display: block;
+        }
+        .weather-icon.error::before {
+            content: '?';
+            font-size: 100px;
+            color: #999;
+            line-height: 180px;
+            display: block;
         }
         td[data-weather="02d"] img.weather-icon,
         td[data-weather="03d"] img.weather-icon,
@@ -98,6 +106,10 @@
             .weather-icon {
                 width: 140px;
                 height: 140px;
+            }
+            .weather-icon.error::before {
+                font-size: 80px;
+                line-height: 140px;
             }
             .rain-dots {
                 height: 140px;
@@ -207,7 +219,10 @@
 
         // 背景色を設定する関数
         function setBackgroundColor(cell, icon) {
-            if (['01d', '01n'].includes(icon)) {
+            if (icon === 'error') {
+                cell.style.backgroundColor = '#fff';
+                cell.querySelector('.time').style.color = '#333';
+            } else if (['01d', '01n'].includes(icon)) {
                 cell.style.backgroundColor = '#f7b731';
                 cell.querySelector('.time').style.color = '#fff';
             } else if (['09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n'].includes(icon)) {
@@ -302,6 +317,7 @@
                             const hours = time.getHours().toString().padStart(2, '0');
                             cell.querySelector('img').src = `https://openweathermap.org/img/wn/${icon}@2x.png?cb=${cacheBuster}`;
                             cell.querySelector('img').alt = item.weathercode in weatherCodeMap ? '天気' : '不明';
+                            cell.querySelector('img').classList.remove('error');
                             cell.querySelector('.time').textContent = `${hours}:00`;
                             cell.setAttribute('data-weather', icon);
                             setBackgroundColor(cell, icon);
@@ -329,12 +345,13 @@
                                 }
                             }
                         } else {
-                            // データ不足の場合のデフォルト表示
-                            cell.querySelector('img').src = 'https://openweathermap.org/img/wn/01d@2x.png';
+                            // データ不足の場合
+                            cell.querySelector('img').src = '';
                             cell.querySelector('img').alt = 'データなし';
-                            cell.setAttribute('data-weather', '01d');
+                            cell.querySelector('img').classList.add('error');
+                            cell.setAttribute('data-weather', 'error');
                             cell.querySelector('.time').textContent = '--:--';
-                            setBackgroundColor(cell, '01d');
+                            setBackgroundColor(cell, 'error');
                             const rainDots = cell.querySelector('.rain-dots');
                             if (rainDots) {
                                 rainDots.innerHTML = '';
@@ -348,11 +365,12 @@
                         setTimeout(() => fetchWeather(retryCount + 1), 5000);
                     } else {
                         document.querySelectorAll('td').forEach(cell => {
-                            cell.querySelector('img').src = 'https://openweathermap.org/img/wn/01d@2x.png';
+                            cell.querySelector('img').src = '';
                             cell.querySelector('img').alt = 'データなし';
-                            cell.setAttribute('data-weather', '01d');
+                            cell.querySelector('img').classList.add('error');
+                            cell.setAttribute('data-weather', 'error');
                             cell.querySelector('.time').textContent = '--:--';
-                            setBackgroundColor(cell, '01d');
+                            setBackgroundColor(cell, 'error');
                             const rainDots = cell.querySelector('.rain-dots');
                             if (rainDots) {
                                 rainDots.innerHTML = '';
