@@ -42,11 +42,17 @@
             margin: 0 auto;
             display: block;
         }
-        .weather-icon.error::before {
-            content: '?';
+        .weather-icon-placeholder {
+            width: 180px;
+            height: 180px;
+            margin: 0 auto;
+            display: none;
             font-size: 100px;
             color: #999;
             line-height: 180px;
+            text-align: center;
+        }
+        .weather-icon-placeholder.error {
             display: block;
         }
         td[data-weather="02d"] img.weather-icon,
@@ -103,11 +109,11 @@
             td {
                 height: 100px;
             }
-            .weather-icon {
+            .weather-icon, .weather-icon-placeholder {
                 width: 140px;
                 height: 140px;
             }
-            .weather-icon.error::before {
+            .weather-icon-placeholder {
                 font-size: 80px;
                 line-height: 140px;
             }
@@ -138,18 +144,22 @@
     <table>
         <tr>
             <td data-weather="01d">
+                <div class="weather-icon-placeholder">?</div>
                 <img src="https://openweathermap.org/img/wn/01d@2x.png" alt="晴れ" class="weather-icon">
                 <div class="time" data-hour="0"></div>
             </td>
             <td data-weather="02d">
+                <div class="weather-icon-placeholder">?</div>
                 <img src="https://openweathermap.org/img/wn/02d@2x.png" alt="曇り" class="weather-icon">
                 <div class="time" data-hour="3"></div>
             </td>
             <td data-weather="03d">
+                <div class="weather-icon-placeholder">?</div>
                 <img src="https://openweathermap.org/img/wn/03d@2x.png" alt="曇り" class="weather-icon">
                 <div class="time" data-hour="6"></div>
             </td>
             <td data-weather="04d">
+                <div class="weather-icon-placeholder">?</div>
                 <img src="https://openweathermap.org/img/wn/04d@2x.png" alt="厚い曇り" class="weather-icon">
                 <div class="time" data-hour="9"></div>
             </td>
@@ -157,19 +167,23 @@
         <tr>
             <td data-weather="09d">
                 <div class="rain-dots"></div>
+                <div class="weather-icon-placeholder">?</div>
                 <img src="https://openweathermap.org/img/wn/09d@2x.png" alt="小雨" class="weather-icon">
                 <div class="time" data-hour="12"></div>
             </td>
             <td data-weather="10d">
                 <div class="rain-dots"></div>
+                <div class="weather-icon-placeholder">?</div>
                 <img src="https://openweathermap.org/img/wn/10d@2x.png" alt="雨" class="weather-icon">
                 <div class="time" data-hour="15"></div>
             </td>
             <td data-weather="01d">
+                <div class="weather-icon-placeholder">?</div>
                 <img src="https://openweathermap.org/img/wn/01d@2x.png" alt="晴れ" class="weather-icon">
                 <div class="time" data-hour="18"></div>
             </td>
             <td data-weather="02d">
+                <div class="weather-icon-placeholder">?</div>
                 <img src="https://openweathermap.org/img/wn/02d@2x.png" alt="曇り" class="weather-icon">
                 <div class="time" data-hour="21"></div>
             </td>
@@ -317,7 +331,8 @@
                             const hours = time.getHours().toString().padStart(2, '0');
                             cell.querySelector('img').src = `https://openweathermap.org/img/wn/${icon}@2x.png?cb=${cacheBuster}`;
                             cell.querySelector('img').alt = item.weathercode in weatherCodeMap ? '天気' : '不明';
-                            cell.querySelector('img').classList.remove('error');
+                            cell.querySelector('img').style.display = 'block';
+                            cell.querySelector('.weather-icon-placeholder').classList.remove('error');
                             cell.querySelector('.time').textContent = `${hours}:00`;
                             cell.setAttribute('data-weather', icon);
                             setBackgroundColor(cell, icon);
@@ -347,8 +362,9 @@
                         } else {
                             // データ不足の場合
                             cell.querySelector('img').src = '';
-                            cell.querySelector('img').alt = 'データなし';
-                            cell.querySelector('img').classList.add('error');
+                            cell.querySelector('img').alt = '';
+                            cell.querySelector('img').style.display = 'none';
+                            cell.querySelector('.weather-icon-placeholder').classList.add('error');
                             cell.setAttribute('data-weather', 'error');
                             cell.querySelector('.time').textContent = '--:--';
                             setBackgroundColor(cell, 'error');
@@ -366,8 +382,9 @@
                     } else {
                         document.querySelectorAll('td').forEach(cell => {
                             cell.querySelector('img').src = '';
-                            cell.querySelector('img').alt = 'データなし';
-                            cell.querySelector('img').classList.add('error');
+                            cell.querySelector('img').alt = '';
+                            cell.querySelector('img').style.display = 'none';
+                            cell.querySelector('.weather-icon-placeholder').classList.add('error');
                             cell.setAttribute('data-weather', 'error');
                             cell.querySelector('.time').textContent = '--:--';
                             setBackgroundColor(cell, 'error');
