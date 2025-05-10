@@ -101,6 +101,10 @@
             color: #333;
             margin-top: -8px;
             font-weight: bold;
+            transition: opacity 0.3s ease;
+        }
+        .time.fade {
+            opacity: 0;
         }
         @media (max-width: 1024px) {
             table {
@@ -282,6 +286,24 @@
             return startHour;
         }
 
+        // 時刻と気温を3秒ごとに切り替え
+        function toggleTimeAndTemperature() {
+            const cells = document.querySelectorAll('td');
+            const showTemperature = document.body.classList.toggle('show-temperature');
+            cells.forEach(cell => {
+                const timeElement = cell.querySelector('.time');
+                timeElement.classList.add('fade');
+                setTimeout(() => {
+                    if (showTemperature) {
+                        timeElement.textContent = cell.dataset.temperature || '--℃';
+                    } else {
+                        timeElement.textContent = cell.dataset.hour || '--:--';
+                    }
+                    timeElement.classList.remove('fade');
+                }, 300);
+            });
+        }
+
         // 天気データを取得して更新
         function fetchWeather(retryCount = 0) {
             const maxRetries = 3;
@@ -291,7 +313,7 @@
             tomorrow.setDate(today.getDate() + 1);
             const startDate = today.toISOString().split('T')[0];
             const endDate = tomorrow.toISOString().split('T')[0];
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=35.7076&longitude=139.6637&hourly=weathercode&timezone=Asia%2FTokyo&start_date=${startDate}&end_date=${endDate}&cache_buster=${cacheBuster}`;
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=35.7076&longitude=139.6637&hourly=weathercode,temperature_2m&timezone=Asia%2FTokyo&start_date=${startDate}&end_date=${endDate}&cache_buster=${cacheBuster}`;
 
             fetch(url)
                 .then(response => {
@@ -303,11 +325,12 @@
                     let forecastList = [];
 
                     const hourlyData = data.hourly;
-                    if (!hourlyData || !hourlyData.time || !hourlyData.weathercode) {
+                    if (!hourlyData || !hourlyData.time || !hourlyData.weathercode || !hourlyData.temperature_2m) {
                         throw new Error('不正なAPIレスポンス: 必要なデータが欠落');
                     }
                     const times = hourlyData.time;
                     const weatherCodes = hourlyData.weathercode;
+                    const temperatures = hourlyData.temperature_2m;
 
                     const startHour = getStartHour();
                     const startTimeMs = startHour.getTime();
@@ -317,7 +340,8 @@
                         if (diffHours >= 0 && diffHours % 3 === 0) {
                             forecastList.push({
                                 time: forecastTime,
-                                weathercode: weatherCodes[i]
+                                weathercode: weatherCodes[i],
+                                temperature: Math.round(temperatures[i])
                             });
                         }
                     }
@@ -329,11 +353,14 @@
                             const icon = getIconWithDayNight(item.weathercode, hour);
                             const time = item.time;
                             const hours = time.getHours().toString().padStart(2, '0');
+                            const temperature = `${item.temperature}℃`;
                             cell.querySelector('img').src = `https://openweathermap.org/img/wn/${icon}@2x.png?cb=${cacheBuster}`;
                             cell.querySelector('img').alt = item.weathercode in weatherCodeMap ? '天気' : '不明';
                             cell.querySelector('img').style.display = 'block';
                             cell.querySelector('.weather-icon-placeholder').classList.remove('error');
                             cell.querySelector('.time').textContent = `${hours}:00`;
+                            cell.dataset.hour = `${hours}:00`;
+                            cell.dataset.temperature = temperature;
                             cell.setAttribute('data-weather', icon);
                             setBackgroundColor(cell, icon);
 
@@ -367,6 +394,8 @@
                             cell.querySelector('.weather-icon-placeholder').classList.add('error');
                             cell.setAttribute('data-weather', 'error');
                             cell.querySelector('.time').textContent = '--:--';
+                            cell.dataset.hour = '--:--';
+                            cell.dataset.temperature = '--℃';
                             setBackgroundColor(cell, 'error');
                             const rainDots = cell.querySelector('.rain-dots');
                             if (rainDots) {
@@ -387,6 +416,8 @@
                             cell.querySelector('.weather-icon-placeholder').classList.add('error');
                             cell.setAttribute('data-weather', 'error');
                             cell.querySelector('.time').textContent = '--:--';
+                            cell.dataset.hour = '--:--';
+                            cell.dataset.temperature = '--℃';
                             setBackgroundColor(cell, 'error');
                             const rainDots = cell.querySelector('.rain-dots');
                             if (rainDots) {
@@ -404,6 +435,8 @@
             const time = new Date(startHour.getTime() + offset * 60 * 60 * 1000);
             const hours = time.getHours().toString().padStart(2, '0');
             cell.querySelector('.time').textContent = `${hours}:00`;
+            cell.dataset.hour = `${hours}:00`;
+            cell.dataset.temperature = '--℃';
             const weatherCode = cell.getAttribute('data-weather');
             setBackgroundColor(cell, weatherCode);
         });
@@ -416,6 +449,9 @@
 
         // 10分ごとにデータ更新
         setInterval(fetchWeather, 10 * 60 * 1000);
+
+        // 3秒ごとに時刻と気温を切り替え
+        setInterval(toggleTimeAndTemperature, 3000);
     </script>
 </body>
 </html>
