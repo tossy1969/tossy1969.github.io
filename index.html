@@ -5,20 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires"音声ファイルは壊れておらず、三日前にはクローム含む全てのブラウザで強制再生可能でした。
-ページ遷移の機能追加してるうちに、鳴らなくなってしまった。
-
-ユーザーによる操作を意図していないイントラネット内でのサイトなので、ユーザー操作が必要な設定は全てなくしてください。
-
-
-
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Dynamic Display</title>
     <style>
@@ -48,23 +34,20 @@
         const displayDurations = [30000, 5000, 30000, 5000]; // 20秒, 5秒, 30秒, 5秒
         const ringTimes = ['09:00', '12:00', '15:00', '18:00', '21:00'];
 
-        // 現在の時間を取得
-        function getCurrentTime() {
-            const now = new Date();
-            return {
-                hours: now.getHours(),
-                minutes: now.getMinutes(),
-                timeString: now.toTimeString().slice(0, 5) // HH:MM形式
-            };
-        }
+        // 初回に現在時刻を取得
+        const initialTime = new Date();
+        const initialTotalMinutes = initialTime.getHours() * 60 + initialTime.getMinutes();
 
-        // 0:30〜4:30の時間帯かどうかを判定
+        // 時間帯（20:00〜4:50）の判定
         function isClockOnlyTime() {
-            const { hours, minutes } = getCurrentTime();
-            const totalMinutes = hours * 60 + minutes;
-            const start = 19 * 60 + 00; // 19:00
-            const end = 23 * 60 + 59;   // 23:59
-            return totalMinutes >= start && totalMinutes < end;
+            // 初回時刻を基準に、経過時間を考慮
+            const now = new Date();
+            const elapsedMs = now - initialTime;
+            const elapsedMinutes = Math.floor(elapsedMs / (60 * 1000));
+            const currentTotalMinutes = (initialTotalMinutes + elapsedMinutes) % (24 * 60);
+            const start = 20 * 60 + 0; // 20:00
+            const end = 4 * 60 + 50;   // 4:50
+            return (currentTotalMinutes >= start || currentTotalMinutes < end);
         }
 
         // 指定時間待機するユーティリティ
@@ -108,17 +91,17 @@
             audio.currentTime = 0; // 最初から再生
             const playPromise = audio.play();
             playPromise.then(() => {
-                console.log(`ring.mp3再生成功: ${getCurrentTime().timeString}`);
+                console.log(`ring.mp3再生成功: ${new Date().toTimeString().slice(0, 5)}`);
             }).catch(e => {
-                console.error(`ring.mp3再生失敗: ${getCurrentTime().timeString}, エラー:`, e);
-                // 再生失敗時に再試行
+                console.error(`ring.mp3再生失敗: ${new Date().toTimeString().slice(0, 5)}, エラー:`, e);
+                // 再生失敗時に遅延を長くして再試行（ネットワーク負荷軽減）
                 setTimeout(() => {
                     audio.play().then(() => {
-                        console.log(`ring.mp3再試行成功: ${getCurrentTime().timeString}`);
+                        console.log(`ring.mp3再試行成功: ${new Date().toTimeString().slice(0, 5)}`);
                     }).catch(e2 => {
-                        console.error(`ring.mp3再試行失敗: ${getCurrentTime().timeString}, エラー:`, e2);
+                        console.error(`ring.mp3再試行失敗: ${new Date().toTimeString().slice(0, 5)}, エラー:`, e2);
                     });
-                }, 500);
+                }, 1000); // 再試行間隔を500msから1000msに延長
             });
         }
 
