@@ -62,8 +62,10 @@
         function isClockOnlyTime() {
             const { hours, minutes } = getCurrentTime();
             const totalMinutes = hours * 60 + minutes;
+            const start = 0 * 60 + 00; // 0:00
+            const end = 4 * 60 + 50;   // 4:50
             const start = 18 * 60 + 30; // 18:30
-            const end = 23 * 60 + 59;   // 4:30
+            const end = 23 * 60 + 59;   // 23:59
             return totalMinutes >= start && totalMinutes < end;
         }
 
