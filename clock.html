@@ -2,6 +2,9 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>デジタル時計</title>
     <style>
         body {
@@ -22,7 +25,7 @@
             height: 50px;
             display: flex;
             justify-content: space-between;
-            margin-bottom: 20px;
+            margin-bottom: 35px; /* 20px → 35px（20 + 15） */
         }
         #clock {
             width: 600px;
@@ -140,7 +143,7 @@
                 <polygon class="segment" id="${id}-e" points="15,110 20,105 25,110 25,175 20,180 15,175"/>
                 <!-- セグメントf（左上垂直） -->
                 <polygon class="segment" id="${id}-f" points="15,25 20,20 25,25 25,90 20,95 15,90"/>
-                <!-- セグメントg（中部水平、横幅54ピクセル） -->
+                <!-- セグメントg（中部水平、横幅70→54ピクセル、センタリング） -->
                 <polygon class="segment" id="${id}-g" points="38,95 82,95 87,100 82,105 38,105 33,100"/>
             </svg>
         `;
@@ -230,9 +233,7 @@
             document.getElementById('dot2').classList.toggle('hidden', Math.random() > 0.5);
         }
 
-        // 時刻と日付の更新（最適化）
-        let lastTime = null;
-        let lastDate = null;
+        // 時刻と日付の更新
         function updateClock() {
             const now = new Date();
             const hours = String(now.getHours()).padStart(2, '0');
@@ -243,50 +244,27 @@
             const time = hours + minutes;
             const date = year + month + day;
 
-            // 時刻または日付が変わった場合のみセグメント更新
-            if (time !== lastTime || date !== lastDate) {
-                // 時刻の更新
-                ['d1', 'd2', 'd3', 'd4'].forEach((digitId, index) => {
-                    const digit = time[index];
-                    const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
-                    // 00:00〜09:59のとき、一桁目の「0」を#333で表示
-                    if (index === 0 && hours < 10 && digit === '0') {
-                        segments.forEach(segment => {
-                            const element = document.getElementById(`${digitId}-${segment}`);
-                            if (element) {
-                                element.style.fill = '#333333';
-                                element.style.stroke = '#333333';
-                                element.classList.add('off');
-                            }
-                        });
-                    } else {
-                        segments.forEach(segment => {
-                            const element = document.getElementById(`${digitId}-${segment}`);
-                            if (element) {
-                                if (patterns[digit].includes(segment)) {
-                                    element.style.fill = 'white';
-                                    element.style.stroke = 'white';
-                                    element.classList.remove('off');
-                                } else {
-                                    element.style.fill = '#333333';
-                                    element.style.stroke = '#333333';
-                                    element.classList.add('off');
-                                }
-                            }
-                        });
-                    }
-                });
-
-                // 日付の更新
-                ['date1', 'date2', 'date3', 'date4', 'date5', 'date6', 'date7', 'date8'].forEach((digitId, index) => {
-                    const digit = date[index];
-                    const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+            // 時刻の更新
+            ['d1', 'd2', 'd3', 'd4'].forEach((digitId, index) => {
+                const digit = time[index];
+                const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+                // 00:00〜09:59のとき、一桁目の「0」を#333で表示
+                if (index === 0 && hours < 10 && digit === '0') {
+                    segments.forEach(segment => {
+                        const element = document.getElementById(`${digitId}-${segment}`);
+                        if (element) {
+                            element.style.fill = '#333333';
+                            element.style.stroke = '#333333';
+                            element.classList.add('off');
+                        }
+                    });
+                } else {
                     segments.forEach(segment => {
                         const element = document.getElementById(`${digitId}-${segment}`);
                         if (element) {
                             if (patterns[digit].includes(segment)) {
-                                element.style.fill = 'orange';
-                                element.style.stroke = 'orange';
+                                element.style.fill = 'white';
+                                element.style.stroke = 'white';
                                 element.classList.remove('off');
                             } else {
                                 element.style.fill = '#333333';
@@ -295,13 +273,30 @@
                             }
                         }
                     });
+                }
+            });
+
+            // 日付の更新
+            ['date1', 'date2', 'date3', 'date4', 'date5', 'date6', 'date7', 'date8'].forEach((digitId, index) => {
+                const digit = date[index];
+                const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+                segments.forEach(segment => {
+                    const element = document.getElementById(`${digitId}-${segment}`);
+                    if (element) {
+                        if (patterns[digit].includes(segment)) {
+                            element.style.fill = 'orange';
+                            element.style.stroke = 'orange';
+                            element.classList.remove('off');
+                        } else {
+                            element.style.fill = '#333333';
+                            element.style.stroke = '#333333';
+                            element.classList.add('off');
+                        }
+                    }
                 });
+            });
 
-                lastTime = time;
-                lastDate = date;
-            }
-
-            // コロンとドットの点滅（毎秒更新）
+            // コロンとドットの点滅
             const colon = document.getElementById('colon');
             const dot1 = document.getElementById('dot1');
             const dot2 = document.getElementById('dot2');
@@ -336,57 +331,29 @@
             });
         }
 
-        // 初期化とクリア処理
-        let clockInterval = null;
-        let shuffleInterval = null;
+        // 初期表示テスト
+        testDisplay();
 
-        function init() {
-            // 初期表示テスト
-            testDisplay();
+        // シャッフルアニメーションと時計更新
+        let clockInterval; // setIntervalを保持
+        let shuffleCount = 0;
+        const shuffleInterval = setInterval(() => {
+            shuffleSegments();
+            shuffleCount++;
+            if (shuffleCount >= 5) {
+                clearInterval(shuffleInterval);
+                updateClock();
+                clockInterval = setInterval(updateClock, 1000); // グローバル変数に保存
+            }
+        }, 100);
 
-            // シャッフルアニメーション（0.1秒×5コマ）
-            let shuffleCount = 0;
-            shuffleInterval = setInterval(() => {
-                shuffleSegments();
-                shuffleCount++;
-                if (shuffleCount >= 5) {
-                    clearInterval(shuffleInterval);
-                    shuffleInterval = null;
-                    updateClock();
-                    // 1秒ごとに更新
-                    clockInterval = setInterval(updateClock, 1000);
-                }
-            }, 100);
-
-            // ページアンロード時にインターバルをクリア
-            window.addEventListener('unload', () => {
-                if (clockInterval) {
-                    clearInterval(clockInterval);
-                    clockInterval = null;
-                }
-                if (shuffleInterval) {
-                    clearInterval(shuffleInterval);
-                    shuffleInterval = null;
-                }
-            });
-
-            // タブの表示/非表示でインターバルを管理
-            document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'hidden') {
-                    if (clockInterval) {
-                        clearInterval(clockInterval);
-                        clockInterval = null;
-                    }
-                } else if (document.visibilityState === 'visible') {
-                    if (!clockInterval) {
-                        updateClock(); // 即時更新
-                        clockInterval = setInterval(updateClock, 1000);
-                    }
-                }
-            });
-        }
-
-        window.onload = init;
+        // アンロード時にクリーンアップ
+        window.onunload = () => {
+            if (clockInterval) {
+                clearInterval(clockInterval);
+                console.log('clockIntervalクリア');
+            }
+        };
     </script>
 </body>
 </html>
