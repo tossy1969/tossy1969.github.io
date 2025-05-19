@@ -40,20 +40,23 @@
             width: 180px;
             height: 180px;
             margin: 0 auto;
-            display: block;
+            display: none; /* 初期状態で非表示 */
         }
         .weather-icon-placeholder {
             width: 180px;
             height: 180px;
             margin: 0 auto;
-            display: none;
+            display: block; /* 初期状態で表示 */
             font-size: 100px;
             color: #999;
             line-height: 180px;
             text-align: center;
         }
+        .weather-icon-placeholder.hidden {
+            display: none; /* データ取得後に非表示 */
+        }
         .weather-icon-placeholder.error {
-            display: block;
+            display: block; /* エラー時も表示 */
         }
         td[data-weather="02d"] img.weather-icon,
         td[data-weather="02n"] img.weather-icon,
@@ -150,48 +153,46 @@
 <body>
     <table>
         <tr>
-            <td data-weather="01d">
+            <td>
                 <div class="weather-icon-placeholder">?</div>
-                <img src="https://openweathermap.org/img/wn/01d@2x.png" alt="晴れ" class="weather-icon">
+                <img src="" alt="" class="weather-icon">
                 <div class="time" data-hour="0"></div>
             </td>
-            <td data-weather="02d">
+            <td>
                 <div class="weather-icon-placeholder">?</div>
-                <img src="https://openweathermap.org/img/wn/02d@2x.png" alt="曇り" class="weather-icon">
+                <img src="" alt="" class="weather-icon">
                 <div class="time" data-hour="3"></div>
             </td>
-            <td data-weather="03d">
+            <td>
                 <div class="weather-icon-placeholder">?</div>
-                <img src="https://openweathermap.org/img/wn/03d@2x.png" alt="曇り" class="weather-icon">
+                <img src="" alt="" class="weather-icon">
                 <div class="time" data-hour="6"></div>
             </td>
-            <td data-weather="04d">
+            <td>
                 <div class="weather-icon-placeholder">?</div>
-                <img src="https://openweathermap.org/img/wn/04d@2x.png" alt="厚い曇り" class="weather-icon">
+                <img src="" alt="" class="weather-icon">
                 <div class="time" data-hour="9"></div>
             </td>
         </tr>
         <tr>
-            <td data-weather="09d">
-                <div class="rain-dots"></div>
+            <td>
                 <div class="weather-icon-placeholder">?</div>
-                <img src="https://openweathermap.org/img/wn/09d@2x.png" alt="小雨" class="weather-icon">
+                <img src="" alt="" class="weather-icon">
                 <div class="time" data-hour="12"></div>
             </td>
-            <td data-weather="10d">
-                <div class="rain-dots"></div>
+            <td>
                 <div class="weather-icon-placeholder">?</div>
-                <img src="https://openweathermap.org/img/wn/10d@2x.png" alt="雨" class="weather-icon">
+                <img src="" alt="" class="weather-icon">
                 <div class="time" data-hour="15"></div>
             </td>
-            <td data-weather="01d">
+            <td>
                 <div class="weather-icon-placeholder">?</div>
-                <img src="https://openweathermap.org/img/wn/01d@2x.png" alt="晴れ" class="weather-icon">
+                <img src="" alt="" class="weather-icon">
                 <div class="time" data-hour="18"></div>
             </td>
-            <td data-weather="02d">
+            <td>
                 <div class="weather-icon-placeholder">?</div>
-                <img src="https://openweathermap.org/img/wn/02d@2x.png" alt="曇り" class="weather-icon">
+                <img src="" alt="" class="weather-icon">
                 <div class="time" data-hour="21"></div>
             </td>
         </tr>
@@ -256,28 +257,29 @@
         }
 
         // 雨ドットを動的に追加
-        function addRainDots() {
-            const rainCells = document.querySelectorAll('td[data-weather="09d"], td[data-weather="09n"], td[data-weather="10d"], td[data-weather="10n"], td[data-weather="11d"], td[data-weather="11n"], td[data-weather="13d"], td[data-weather="13n"]');
-            rainCells.forEach(cell => {
-                let rainDots = cell.querySelector('.rain-dots');
-                if (!rainDots) {
-                    rainDots = document.createElement('div');
-                    rainDots.className = 'rain-dots';
-                    cell.insertBefore(rainDots, cell.firstChild);
-                }
+        function addRainDots(cell, icon) {
+            let rainDots = cell.querySelector('.rain-dots');
+            if (!rainDots && ['09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n'].includes(icon)) {
+                rainDots = document.createElement('div');
+                rainDots.className = 'rain-dots';
+                cell.insertBefore(rainDots, cell.firstChild);
+            }
+            if (rainDots) {
                 rainDots.innerHTML = '';
-                for (let i = 0; i < 10; i++) {
-                    const dot = document.createElement('span');
-                    dot.className = 'rain-dot';
-                    if (i % 2 === 0) {
-                        dot.classList.add('blue');
+                if (['09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n'].includes(icon)) {
+                    for (let i = 0; i < 10; i++) {
+                        const dot = document.createElement('span');
+                        dot.className = 'rain-dot';
+                        if (i % 2 === 0) {
+                            dot.classList.add('blue');
+                        }
+                        dot.style.left = `${Math.random() * 100}%`;
+                        dot.style.animationDelay = `${Math.random()}s`;
+                        dot.style.animationDuration = `${0.5 + Math.random()}s`;
+                        rainDots.appendChild(dot);
                     }
-                    dot.style.left = `${Math.random() * 100}%`;
-                    dot.style.animationDelay = `${Math.random()}s`;
-                    dot.style.animationDuration = `${0.5 + Math.random()}s`;
-                    rainDots.appendChild(dot);
                 }
-            });
+            }
         }
 
         // 現在時刻を取得し、次の「3時間ごとの時刻」に揃える
@@ -360,40 +362,20 @@
                             cell.querySelector('img').src = `https://openweathermap.org/img/wn/${icon}@2x.png?cb=${cacheBuster}`;
                             cell.querySelector('img').alt = item.weathercode in weatherCodeMap ? '天気' : '不明';
                             cell.querySelector('img').style.display = 'block';
+                            cell.querySelector('.weather-icon-placeholder').classList.add('hidden');
                             cell.querySelector('.weather-icon-placeholder').classList.remove('error');
                             cell.querySelector('.time').textContent = `${hours}:00`;
                             cell.dataset.hour = `${hours}:00`;
                             cell.dataset.temperature = temperature;
                             cell.setAttribute('data-weather', icon);
                             setBackgroundColor(cell, icon);
-
-                            let rainDots = cell.querySelector('.rain-dots');
-                            if (!rainDots && ['09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n'].includes(icon)) {
-                                rainDots = document.createElement('div');
-                                rainDots.className = 'rain-dots';
-                                cell.insertBefore(rainDots, cell.firstChild);
-                            }
-                            if (rainDots) {
-                                rainDots.innerHTML = '';
-                                if (['09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n'].includes(icon)) {
-                                    for (let i = 0; i < 10; i++) {
-                                        const dot = document.createElement('span');
-                                        dot.className = 'rain-dot';
-                                        if (i % 2 === 0) {
-                                            dot.classList.add('blue');
-                                        }
-                                        dot.style.left = `${Math.random() * 100}%`;
-                                        dot.style.animationDelay = `${Math.random()}s`;
-                                        dot.style.animationDuration = `${0.5 + Math.random()}s`;
-                                        rainDots.appendChild(dot);
-                                    }
-                                }
-                            }
+                            addRainDots(cell, icon);
                         } else {
                             // データ不足の場合
                             cell.querySelector('img').src = '';
                             cell.querySelector('img').alt = '';
                             cell.querySelector('img').style.display = 'none';
+                            cell.querySelector('.weather-icon-placeholder').classList.remove('hidden');
                             cell.querySelector('.weather-icon-placeholder').classList.add('error');
                             cell.setAttribute('data-weather', 'error');
                             cell.querySelector('.time').textContent = '--:--';
@@ -402,11 +384,10 @@
                             setBackgroundColor(cell, 'error');
                             const rainDots = cell.querySelector('.rain-dots');
                             if (rainDots) {
-                                rainDots.innerHTML = '';
+                                rainDots.remove();
                             }
                         }
                     });
-                    addRainDots();
                 })
                 .catch(error => {
                     if (retryCount < maxRetries) {
@@ -416,6 +397,7 @@
                             cell.querySelector('img').src = '';
                             cell.querySelector('img').alt = '';
                             cell.querySelector('img').style.display = 'none';
+                            cell.querySelector('.weather-icon-placeholder').classList.remove('hidden');
                             cell.querySelector('.weather-icon-placeholder').classList.add('error');
                             cell.setAttribute('data-weather', 'error');
                             cell.querySelector('.time').textContent = '--:--';
@@ -424,14 +406,14 @@
                             setBackgroundColor(cell, 'error');
                             const rainDots = cell.querySelector('.rain-dots');
                             if (rainDots) {
-                                rainDots.innerHTML = '';
+                                rainDots.remove();
                             }
                         });
                     }
                 });
         }
 
-        // 各セルの時刻を初期化し、静的データの背景色を設定
+        // 各セルの時刻を初期化
         document.querySelectorAll('td').forEach(cell => {
             const offset = parseInt(cell.querySelector('.time').getAttribute('data-hour'));
             const startHour = getStartHour();
@@ -440,12 +422,8 @@
             cell.querySelector('.time').textContent = `${hours}:00`;
             cell.dataset.hour = `${hours}:00`;
             cell.dataset.temperature = '--℃';
-            const weatherCode = cell.getAttribute('data-weather');
-            setBackgroundColor(cell, weatherCode);
+            // 背景色は設定せず、デフォルトの白色（#fff）を使用
         });
-
-        // 雨ドットを初期化
-        addRainDots();
 
         // 初回データ取得
         fetchWeather();
