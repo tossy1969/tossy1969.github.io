@@ -22,7 +22,7 @@
 </head>
 <body>
     <iframe id="displayFrame" src="/weather.html" allow="autoplay"></iframe>
-    <audio id="ringAudio" src="ring.mp3" preload="auto" muted></audio>
+    <audio id="ringAudio" src="ring.mp3" preload="auto" autoplay playsinline></audio>
 
     <script>
         console.log("index.html読み込み: Version 1.0.9");
@@ -41,7 +41,6 @@
             const now = new Date();
             const today = now.toDateString();
 
-            // 初回または日付が変わったら時刻を更新
             if (!lastTimeUpdate || lastTimeUpdate.toDateString() !== today) {
                 cachedTime = {
                     hours: now.getHours(),
@@ -52,7 +51,6 @@
                 lastTimeUpdate = now;
                 console.log(`時刻更新: ${cachedTime.timeString}`);
             } else {
-                // 5分ごとに時刻ずれをチェック
                 const elapsed = now.getTime() - cachedTime.timestamp;
                 const expectedMinutes = Math.floor(elapsed / (60 * 1000));
                 const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -75,8 +73,8 @@
         function isClockOnlyTime() {
             const { hours, minutes } = getCachedTime();
             const totalMinutes = hours * 60 + minutes;
-            const start = 20 * 60;      // 20:00
-            const end = 4 * 60 + 50;    // 4:50
+            const start = 20 * 60;
+            const end = 4 * 60 + 50;
             return totalMinutes >= start || totalMinutes < end;
         }
 
@@ -118,24 +116,55 @@
 
         // ring.mp3再生
         function playRing() {
-            audio.muted = false; // 再生前にミュート解除
             audio.currentTime = 0;
-            const playPromise = audio.play();
-            playPromise.then(() => {
-                console.log(`ring.mp3再生成功: ${getCachedTime().timeString}`);
-            }).catch(e => {
-                console.error(`ring.mp3再生失敗: ${getCachedTime().timeString}, エラー:`, e);
-                setTimeout(() => {
-                    audio.muted = false;
-                    audio.play().then(() => {
-                        console.log(`ring.mp3再試行成功: ${getCachedTime().timeString}`);
-                    }).catch(e2 => {
-                        console.error(`ring.mp3再試行失敗: ${getCachedTime().timeString}, エラー:`, e2);
+            audio.muted = false; // ミュート解除（念のため）
+
+            // メディアが再生可能か確認
+            if (audio.readyState >= 2) { // HAVE_CURRENT_DATA以上
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log(`ring.mp3再生成功: ${getCachedTime().timeString}`);
+                    }).catch(e => {
+                        console.error(`ring.mp3再生失敗: ${getCachedTime().timeString}, エラー:`, e);
+                        // 最大3回の再試行
+                        let attempts = 0;
+                        const maxAttempts = 3;
+                        function retryPlay() {
+                            if (attempts >= maxAttempts) {
+                                console.error(`ring.mp3再試行上限到達: ${getCachedTime().timeString}`);
+                                return;
+                            }
+                            attempts++;
+                            setTimeout(() => {
+                                audio.currentTime = 0;
+                                audio.play().then(() => {
+                                    console.log(`ring.mp3再試行${attempts}成功: ${getCachedTime().timeString}`);
+                                }).catch(e2 => {
+                                    console.error(`ring.mp3再試行${attempts}失敗: ${getCachedTime().timeString}, エラー:`, e2);
+                                    retryPlay();
+                                });
+                            }, 1000 * attempts); // 1秒、2秒、3秒後に再試行
+                        }
+                        retryPlay();
                     });
-                }, 500);
-            }).finally(() => {
-                audio.muted = true; // 再生後に再ミュート
-            });
+                } else {
+                    // Promise非サポート（非常に古いFirefoxの場合）
+                    try {
+                        audio.play();
+                        console.log(`ring.mp3再生成功（非Promise）: ${getCachedTime().timeString}`);
+                    } catch (e) {
+                        console.error(`ring.mp3再生失敗（非Promise）: ${getCachedTime().timeString}, エラー:`, e);
+                    }
+                }
+            } else {
+                // メディアが準備できていない場合、canplayを待つ
+                console.log(`ring.mp3未準備: readyState=${audio.readyState}, 待機中`);
+                audio.addEventListener('canplay', function handler() {
+                    audio.removeEventListener('canplay', handler);
+                    playRing(); // 準備完了後、再度再生試行
+                }, { once: true });
+            }
         }
 
         // 次の再生時刻スケジュール
@@ -162,7 +191,8 @@
         // 初期化
         function init() {
             audio.onloadeddata = () => console.log('ring.mp3ロード成功');
-            audio.onerror = () => console.error('ring.mp3ロード失敗');
+            audio.onerror = (e) => console.error('ring.mp3ロード失敗:', e);
+            audio.muted = false; // 初期状態で非ミュート
 
             isClockOnly = isClockOnlyTime();
             const timestamp = Date.now();
