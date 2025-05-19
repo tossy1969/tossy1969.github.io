@@ -125,9 +125,9 @@
     </div>
 
     <script>
-        // 時刻用7セグメントSVG（高さ200px、間隔10px、gの横幅12px短縮）
+        // 時刻用7セグメントSVG（高さ200px、間隔10px、gの横幅54ピクセル）
         const segmentSVG = (id) => `
-            <svg width="120" height="200" viewBox="0 -5 120 210">
+            <svg width="120" height="200" viewBox="0 0 120 210">
                 <!-- セグメントa（上部水平） -->
                 <polygon class="segment" id="${id}-a" points="30,5 90,5 95,10 90,15 30,15 25,10"/>
                 <!-- セグメントb（右上垂直） -->
@@ -140,14 +140,14 @@
                 <polygon class="segment" id="${id}-e" points="15,110 20,105 25,110 25,175 20,180 15,175"/>
                 <!-- セグメントf（左上垂直） -->
                 <polygon class="segment" id="${id}-f" points="15,25 20,20 25,25 25,90 20,95 15,90"/>
-                <!-- セグメントg（中部水平、横幅12px短縮、センタリング） -->
-                <polygon class="segment" id="${id}-g" points="36,95 84,95 89,100 84,105 36,105 31,100"/>
+                <!-- セグメントg（中部水平、横幅70→54ピクセル、センタリング） -->
+                <polygon class="segment" id="${id}-g" points="38,95 82,95 87,100 82,105 38,105 33,100"/>
             </svg>
         `;
 
         // 日付用7セグメントSVG（高さ50px、間隔5px、変更なし）
         const dateSegmentSVG = (id) => `
-            <svg width="40" height="50" viewBox="0 -1 40 51">
+            <svg width="40" height="50" viewBox="0 0 40 51">
                 <!-- セグメントa（上部水平） -->
                 <polygon class="date-segment" id="${id}-a" points="10,1.5 30,1.5 32,3.5 30,5.5 10,5.5 8,3.5"/>
                 <!-- セグメントb（右上垂直） -->
