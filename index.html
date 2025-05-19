@@ -22,7 +22,7 @@
 </head>
 <body>
     <iframe id="displayFrame" src="/weather.html" allow="autoplay"></iframe>
-    <audio id="ringAudio" src="ring.mp3" preload="auto"></audio>
+    <audio id="ringAudio" src="ring.mp3" preload="auto" muted></audio>
 
     <script>
         console.log("index.html読み込み: Version 1.0.9");
@@ -31,31 +31,61 @@
         let isClockOnly = false;
         let currentIndex = 0;
         const pages = ['/weather.html', '/clock.html', '/metro.html', '/clock.html'];
-        const displayDurations = [30000, 5000, 30000, 5000]; // 20秒, 5秒, 30秒, 5秒
+        const displayDurations = [30000, 5000, 30000, 5000];
         const ringTimes = ['09:00', '12:00', '15:00', '18:00', '21:00'];
 
-        // 初回に現在時刻を取得
-        const initialTime = new Date();
-        const initialTotalMinutes = initialTime.getHours() * 60 + initialTime.getMinutes();
-
-        // 時間帯（20:00〜4:50）の判定
-        function isClockOnlyTime() {
-            // 初回時刻を基準に、経過時間を考慮
+        // キャッシュ付き時刻取得
+        let cachedTime = null;
+        let lastTimeUpdate = null;
+        function getCachedTime() {
             const now = new Date();
-            const elapsedMs = now - initialTime;
-            const elapsedMinutes = Math.floor(elapsedMs / (60 * 1000));
-            const currentTotalMinutes = (initialTotalMinutes + elapsedMinutes) % (24 * 60);
-            const start = 20 * 60 + 0; // 20:00
-            const end = 4 * 60 + 50;   // 4:50
-            return (currentTotalMinutes >= start || currentTotalMinutes < end);
+            const today = now.toDateString();
+
+            // 初回または日付が変わったら時刻を更新
+            if (!lastTimeUpdate || lastTimeUpdate.toDateString() !== today) {
+                cachedTime = {
+                    hours: now.getHours(),
+                    minutes: now.getMinutes(),
+                    timeString: now.toTimeString().slice(0, 5),
+                    timestamp: now.getTime()
+                };
+                lastTimeUpdate = now;
+                console.log(`時刻更新: ${cachedTime.timeString}`);
+            } else {
+                // 5分ごとに時刻ずれをチェック
+                const elapsed = now.getTime() - cachedTime.timestamp;
+                const expectedMinutes = Math.floor(elapsed / (60 * 1000));
+                const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                const cachedMinutes = cachedTime.hours * 60 + cachedTime.minutes;
+                if (Math.abs(currentMinutes - (cachedMinutes + expectedMinutes)) >= 1) {
+                    cachedTime = {
+                        hours: now.getHours(),
+                        minutes: now.getMinutes(),
+                        timeString: now.toTimeString().slice(0, 5),
+                        timestamp: now.getTime()
+                    };
+                    lastTimeUpdate = now;
+                    console.log(`時刻ずれ検出、更新: ${cachedTime.timeString}`);
+                }
+            }
+            return cachedTime;
         }
 
-        // 指定時間待機するユーティリティ
+        // 20:00〜4:50の時間帯判定
+        function isClockOnlyTime() {
+            const { hours, minutes } = getCachedTime();
+            const totalMinutes = hours * 60 + minutes;
+            const start = 20 * 60;      // 20:00
+            const end = 4 * 60 + 50;    // 4:50
+            return totalMinutes >= start || totalMinutes < end;
+        }
+
+        // 指定時間待機
         function wait(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
         }
 
-        // ページ切り替え処理
+        // ページ切り替え
         async function switchPage() {
             if (isClockOnly) {
                 const timestamp = Date.now();
@@ -68,10 +98,10 @@
             frame.src = `${pages[currentIndex]}?t=${timestamp}`;
             console.log(`ページ切り替え: ${frame.src}, 表示時間: ${displayDurations[currentIndex]}ms`);
             await wait(displayDurations[currentIndex]);
-            switchPage(); // 次のページへ
+            switchPage();
         }
 
-        // 時間帯のチェック
+        // 時間帯チェック
         function checkTime() {
             const wasClockOnly = isClockOnly;
             isClockOnly = isClockOnlyTime();
@@ -80,32 +110,35 @@
                 frame.src = `/clock.html?t=${timestamp}`;
                 console.log(`Clock専用時間帯開始: ${frame.src}`);
             } else if (!isClockOnly && wasClockOnly) {
-                currentIndex = -1; // 最初から
+                currentIndex = -1;
                 switchPage();
             }
-            setTimeout(checkTime, 60 * 1000); // 1分ごとにチェック
+            setTimeout(checkTime, 60 * 1000);
         }
 
-        // ring.mp3を再生する関数
+        // ring.mp3再生
         function playRing() {
-            audio.currentTime = 0; // 最初から再生
+            audio.muted = false; // 再生前にミュート解除
+            audio.currentTime = 0;
             const playPromise = audio.play();
             playPromise.then(() => {
-                console.log(`ring.mp3再生成功: ${new Date().toTimeString().slice(0, 5)}`);
+                console.log(`ring.mp3再生成功: ${getCachedTime().timeString}`);
             }).catch(e => {
-                console.error(`ring.mp3再生失敗: ${new Date().toTimeString().slice(0, 5)}, エラー:`, e);
-                // 再生失敗時に遅延を長くして再試行（ネットワーク負荷軽減）
+                console.error(`ring.mp3再生失敗: ${getCachedTime().timeString}, エラー:`, e);
                 setTimeout(() => {
+                    audio.muted = false;
                     audio.play().then(() => {
-                        console.log(`ring.mp3再試行成功: ${new Date().toTimeString().slice(0, 5)}`);
+                        console.log(`ring.mp3再試行成功: ${getCachedTime().timeString}`);
                     }).catch(e2 => {
-                        console.error(`ring.mp3再試行失敗: ${new Date().toTimeString().slice(0, 5)}, エラー:`, e2);
+                        console.error(`ring.mp3再試行失敗: ${getCachedTime().timeString}, エラー:`, e2);
                     });
-                }, 1000); // 再試行間隔を500msから1000msに延長
+                }, 500);
+            }).finally(() => {
+                audio.muted = true; // 再生後に再ミュート
             });
         }
 
-        // 次の再生時刻までの時間を計算してタイマーを設定
+        // 次の再生時刻スケジュール
         function scheduleNextRing() {
             const now = new Date();
             const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -114,7 +147,6 @@
                 return hours * 60 + minutes;
             });
 
-            // 次の再生時刻を計算
             let nextRing = ringMinutes.find(m => m > currentMinutes) || ringMinutes[0] + 24 * 60;
             const minutesToNext = (nextRing - currentMinutes + 24 * 60) % (24 * 60);
             const msToNext = minutesToNext * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
@@ -123,33 +155,26 @@
 
             setTimeout(() => {
                 playRing();
-                scheduleNextRing(); // 次の再生をスケジュール
+                scheduleNextRing();
             }, msToNext);
         }
 
         // 初期化
         function init() {
-            // ring.mp3のロード確認
             audio.onloadeddata = () => console.log('ring.mp3ロード成功');
             audio.onerror = () => console.error('ring.mp3ロード失敗');
 
-            // 初回時間帯チェック
             isClockOnly = isClockOnlyTime();
-            // 初回ページ設定
             const timestamp = Date.now();
             frame.src = isClockOnly ? `/clock.html?t=${timestamp}` : `/weather.html?t=${timestamp}`;
             console.log(`初期ページ: ${frame.src}`);
-            // ページ切り替え開始（非Clock時間帯のみ）
             if (!isClockOnly) {
                 switchPage();
             }
-            // 時間帯チェック開始
             checkTime();
-            // 再生スケジュール開始
             scheduleNextRing();
         }
 
-        // ページ読み込み時に初期化
         window.onload = init;
     </script>
 </body>
