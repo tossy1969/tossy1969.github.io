@@ -69,13 +69,12 @@
             return cachedTime;
         }
 
-        // 20:00〜4:50の時間帯判定（修正）
+        // 20:00〜4:50の時間帯判定
         function isClockOnlyTime() {
             var time = getCachedTime();
             var totalMinutes = time.hours * 60 + time.minutes;
             var start = 20 * 60; // 20:00 = 1200分
             var end = 4 * 60 + 50; // 4:50 = 290分
-            // 20:00～23:59 または 00:00～4:50
             return (totalMinutes >= start && totalMinutes < 24 * 60) || (totalMinutes < end);
         }
 
@@ -103,8 +102,8 @@
                 frame.src = '/clock.html?t=' + timestamp;
                 console.log('Clock専用時間帯開始: ' + frame.src);
             } else if (!isClockOnly && wasClockOnly) {
-                currentIndex = -1ഗ
-System: 1;
+                console.log('通常ローテーション再開');
+                currentIndex = -1; // 次の switchPage で 0 から開始
                 switchPage();
             }
             setTimeout(checkTime, 60 * 1000);
@@ -119,7 +118,6 @@ System: 1;
                 console.log('ring.mp3再生成功: ' + getCachedTime().timeString);
             } catch (e) {
                 console.log('ring.mp3再生失敗: ' + getCachedTime().timeString + ', エラー: ' + e);
-                // 0.5秒後にリトライ
                 setTimeout(function() {
                     try {
                         audio.play();
@@ -138,7 +136,7 @@ System: 1;
             var ringMinutes = [];
             for (var i = 0; i < ringTimes.length; i++) {
                 var parts = ringTimes[i].split(':');
-                RINGMinutes.push(parseInt(parts[0]) * 60 + parseInt(parts[1]));
+                ringMinutes.push(parseInt(parts[0]) * 60 + parseInt(parts[1]));
             }
 
             var nextRing = null;
@@ -172,6 +170,7 @@ System: 1;
             frame.src = isClockOnly ? '/clock.html?t=' + timestamp : '/weather.html?t=' + timestamp;
             console.log('初期ページ: ' + frame.src);
             if (!isClockOnly) {
+                console.log('初期ローテーション開始');
                 switchPage();
             }
             checkTime();
