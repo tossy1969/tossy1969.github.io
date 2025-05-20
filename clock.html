@@ -21,32 +21,32 @@
             align-items: center;
         }
         #date {
-            width: 860px; /* 100px×8 + 10px×2 + 20px×2 */
-            height: 150px;
+            width: 400px;
+            height: 50px;
             display: flex;
             justify-content: space-between;
             margin-bottom: 35px;
         }
         #clock {
-            width: 960px; /* 200px×4 + 20px×2 + 80px×2 */
-            height: 300px;
+            width: 600px;
+            height: 200px;
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
         .digit {
-            width: 200px;
-            height: 300px;
+            width: 120px;
+            height: 200px;
             position: relative;
         }
         .date-digit {
-            width: 100px;
-            height: 150px;
+            width: 40px;
+            height: 50px;
             position: relative;
         }
         .colon, .dot {
             width: 20px;
-            height: 300px;
+            height: 200px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -54,7 +54,7 @@
         }
         .date-dot {
             width: 10px;
-            height: 150px;
+            height: 50px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -79,17 +79,19 @@
         }
         .segment {
             fill: white;
-            stroke: none; /* 輪郭なし */
+            stroke: none;
         }
         .date-segment {
             fill: orange;
-            stroke: none; /* 輪郭なし */
+            stroke: none;
         }
         .segment.off {
             fill: #333333;
+            stroke: none;
         }
         .date-segment.off {
             fill: #333333;
+            stroke: none;
         }
     </style>
 </head>
@@ -124,9 +126,9 @@
     </div>
 
     <script>
-        // 時刻用7セグメントSVG（高さ300px、幅200px）
+        // 時刻用7セグメントSVG（高さ200px、幅120pxにスケール）
         const segmentSVG = (id) => `
-            <svg width="200" height="300" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">
+            <svg width="120" height="200" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">
                 <!-- セグメントa (上) -->
                 <polygon class="segment" id="${id}-a" points="30,10 70,10 60,20 40,20"/>
                 <!-- セグメントb (右上) -->
@@ -144,9 +146,9 @@
             </svg>
         `;
 
-        // 日付用7セグメントSVG（高さ150px、幅100px）
+        // 日付用7セグメントSVG（高さ50px、幅40pxにスケール）
         const dateSegmentSVG = (id) => `
-            <svg width="100" height="150" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">
+            <svg width="40" height="50" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">
                 <!-- セグメントa (上) -->
                 <polygon class="date-segment" id="${id}-a" points="30,10 70,10 60,20 40,20"/>
                 <!-- セグメントb (右上) -->
