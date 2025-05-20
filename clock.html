@@ -21,11 +21,11 @@
             align-items: center;
         }
         #date {
-            width: 400px;
+            width: 310px; /* 8桁×30px + 2ドット×10px + 間隔7×10px = 310px */
             height: 50px;
             display: flex;
             justify-content: space-between;
-            margin-bottom: 35px; /* 20px → 35px（20 + 15） */
+            margin-bottom: 35px;
         }
         #clock {
             width: 600px;
@@ -40,7 +40,7 @@
             position: relative;
         }
         .date-digit {
-            width: 40px;
+            width: 30px; /* 縦横比0.6に合わせて変更（30px / 50px） */
             height: 50px;
             position: relative;
         }
@@ -70,7 +70,7 @@
         .date-dot-dot {
             width: 5px;
             height: 5px;
-            background-color: orange;
+            background-color: white; /* 時刻のコロンと統一 */
             border-radius: 50%;
             margin: 5px 0;
         }
@@ -80,12 +80,12 @@
         .segment {
             fill: white;
             stroke: white;
-            stroke-width: 6; /* 4 * 1.5 */
+            stroke-width: 6;
         }
         .date-segment {
-            fill: orange;
-            stroke: orange;
-            stroke-width: 3; /* 2 * 1.5 */
+            fill: white; /* 時刻数字と同じ白に変更 */
+            stroke: white;
+            stroke-width: 6; /* 時刻数字と同じに変更 */
         }
         .segment.off {
             fill: #333333;
@@ -148,23 +148,23 @@
             </svg>
         `;
 
-        // 日付用7セグメントSVG（高さ50px、間隔5px）
+        // 日付用7セグメントSVG（高さ50px、幅30px、縦横比0.6、時刻と同じデザイン）
         const dateSegmentSVG = (id) => `
-            <svg width="40" height="50" viewBox="0 0 40 51">
+            <svg width="30" height="50" viewBox="0 0 120 210">
                 <!-- セグメントa（上部水平） -->
-                <polygon class="date-segment" id="${id}-a" points="10,1.5 30,1.5 32,3.5 30,5.5 10,5.5 8,3.5"/>
+                <polygon class="date-segment" id="${id}-a" points="30,5 90,5 95,10 90,15 30,15 25,10"/>
                 <!-- セグメントb（右上垂直） -->
-                <polygon class="date-segment" id="${id}-b" points="32,8.5 34,6.5 36,8.5 36,21 34,23 32,21"/>
+                <polygon class="date-segment" id="${id}-b" points="95,25 100,20 105,25 105,90 100,95 95,90"/>
                 <!-- セグメントc（右下垂直） -->
-                <polygon class="date-segment" id="${id}-c" points="32,31 34,29 36,31 36,41.5 34,43.5 32,41.5"/>
+                <polygon class="date-segment" id="${id}-c" points="95,110 100,105 105,110 105,175 100,180 95,175"/>
                 <!-- セグメントd（下部水平） -->
-                <polygon class="date-segment" id="${id}-d" points="10,48.5 30,48.5 32,46.5 30,44.5 10,44.5 8,46.5"/>
+                <polygon class="date-segment" id="${id}-d" points="30,195 90,195 95,190 90,185 30,185 25,190"/>
                 <!-- セグメントe（左下垂直） -->
-                <polygon class="date-segment" id="${id}-e" points="4,31 6,29 8,31 8,41.5 6,43.5 4,41.5"/>
+                <polygon class="date-segment" id="${id}-e" points="15,110 20,105 25,110 25,175 20,180 15,175"/>
                 <!-- セグメントf（左上垂直） -->
-                <polygon class="date-segment" id="${id}-f" points="4,8.5 6,6.5 8,8.5 8,21 6,23 4,21"/>
+                <polygon class="date-segment" id="${id}-f" points="15,25 20,20 25,25 25,90 20,95 15,90"/>
                 <!-- セグメントg（中部水平） -->
-                <polygon class="date-segment" id="${id}-g" points="10,24 30,24 32,26 30,28 10,28 8,26"/>
+                <polygon class="date-segment" id="${id}-g" points="38,95 82,95 87,100 82,105 38,105 33,100"/>
             </svg>
         `;
 
@@ -216,8 +216,8 @@
                     const element = document.getElementById(`${digitId}-${segment}`);
                     if (element) {
                         if (Math.random() > 0.5) {
-                            element.style.fill = 'orange';
-                            element.style.stroke = 'orange';
+                            element.style.fill = 'white'; /* オレンジから白に変更 */
+                            element.style.stroke = 'white';
                             element.classList.remove('off');
                         } else {
                             element.style.fill = '#333333';
@@ -284,8 +284,8 @@
                     const element = document.getElementById(`${digitId}-${segment}`);
                     if (element) {
                         if (patterns[digit].includes(segment)) {
-                            element.style.fill = 'orange';
-                            element.style.stroke = 'orange';
+                            element.style.fill = 'white'; /* オレンジから白に変更 */
+                            element.style.stroke = 'white';
                             element.classList.remove('off');
                         } else {
                             element.style.fill = '#333333';
@@ -323,8 +323,8 @@
                 segments.forEach(segment => {
                     const element = document.getElementById(`${digitId}-${segment}`);
                     if (element) {
-                        element.style.fill = 'orange';
-                        element.style.stroke = 'orange';
+                        element.style.fill = 'white'; /* オレンジから白に変更 */
+                        element.style.stroke = 'white';
                         element.classList.remove('off');
                     }
                 });
@@ -335,7 +335,7 @@
         testDisplay();
 
         // シャッフルアニメーションと時計更新
-        let clockInterval; // setIntervalを保持
+        let clockInterval;
         let shuffleCount = 0;
         const shuffleInterval = setInterval(() => {
             shuffleSegments();
@@ -343,7 +343,7 @@
             if (shuffleCount >= 5) {
                 clearInterval(shuffleInterval);
                 updateClock();
-                clockInterval = setInterval(updateClock, 1000); // グローバル変数に保存
+                clockInterval = setInterval(updateClock, 1000);
             }
         }, 100);
 
