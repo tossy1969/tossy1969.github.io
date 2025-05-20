@@ -21,32 +21,32 @@
             align-items: center;
         }
         #date {
-            width: 400px;
-            height: 50px;
+            width: 860px; /* 100px×8 + 10px×2 + 20px×2 */
+            height: 150px;
             display: flex;
             justify-content: space-between;
-            margin-bottom: 35px; /* 20px → 35px（20 + 15） */
+            margin-bottom: 35px;
         }
         #clock {
-            width: 600px;
-            height: 200px;
+            width: 960px; /* 200px×4 + 20px×2 + 80px×2 */
+            height: 300px;
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
         .digit {
-            width: 120px;
-            height: 200px;
+            width: 200px;
+            height: 300px;
             position: relative;
         }
         .date-digit {
-            width: 40px;
-            height: 50px;
+            width: 100px;
+            height: 150px;
             position: relative;
         }
         .colon, .dot {
             width: 20px;
-            height: 200px;
+            height: 300px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -54,7 +54,7 @@
         }
         .date-dot {
             width: 10px;
-            height: 50px;
+            height: 150px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -79,21 +79,17 @@
         }
         .segment {
             fill: white;
-            stroke: white;
-            stroke-width: 6; /* 4 * 1.5 */
+            stroke: none; /* 輪郭なし */
         }
         .date-segment {
             fill: orange;
-            stroke: orange;
-            stroke-width: 3; /* 2 * 1.5 */
+            stroke: none; /* 輪郭なし */
         }
         .segment.off {
             fill: #333333;
-            stroke: #333333;
         }
         .date-segment.off {
             fill: #333333;
-            stroke: #333333;
         }
     </style>
 </head>
@@ -128,43 +124,43 @@
     </div>
 
     <script>
-        // 時刻用7セグメントSVG（高さ200px、間隔10px、gの横幅54ピクセル）
+        // 時刻用7セグメントSVG（高さ300px、幅200px）
         const segmentSVG = (id) => `
-            <svg width="120" height="200" viewBox="0 0 120 210">
-                <!-- セグメントa（上部水平） -->
-                <polygon class="segment" id="${id}-a" points="30,5 90,5 95,10 90,15 30,15 25,10"/>
-                <!-- セグメントb（右上垂直） -->
-                <polygon class="segment" id="${id}-b" points="95,25 100,20 105,25 105,90 100,95 95,90"/>
-                <!-- セグメントc（右下垂直） -->
-                <polygon class="segment" id="${id}-c" points="95,110 100,105 105,110 105,175 100,180 95,175"/>
-                <!-- セグメントd（下部水平） -->
-                <polygon class="segment" id="${id}-d" points="30,195 90,195 95,190 90,185 30,185 25,190"/>
-                <!-- セグメントe（左下垂直） -->
-                <polygon class="segment" id="${id}-e" points="15,110 20,105 25,110 25,175 20,180 15,175"/>
-                <!-- セグメントf（左上垂直） -->
-                <polygon class="segment" id="${id}-f" points="15,25 20,20 25,25 25,90 20,95 15,90"/>
-                <!-- セグメントg（中部水平、横幅70→54ピクセル、センタリング） -->
-                <polygon class="segment" id="${id}-g" points="38,95 82,95 87,100 82,105 38,105 33,100"/>
+            <svg width="200" height="300" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">
+                <!-- セグメントa (上) -->
+                <polygon class="segment" id="${id}-a" points="30,10 70,10 60,20 40,20"/>
+                <!-- セグメントb (右上) -->
+                <polygon class="segment" id="${id}-b" points="70,10 80,20 80,60 70,70 60,60 60,20"/>
+                <!-- セグメントc (右下) -->
+                <polygon class="segment" id="${id}-c" points="70,80 80,90 80,130 70,140 60,130 60,90"/>
+                <!-- セグメントd (下) -->
+                <polygon class="segment" id="${id}-d" points="30,140 70,140 60,130 40,130"/>
+                <!-- セグメントe (左下) -->
+                <polygon class="segment" id="${id}-e" points="20,90 30,80 40,90 40,130 30,140 20,130"/>
+                <!-- セグメントf (左上) -->
+                <polygon class="segment" id="${id}-f" points="20,20 30,10 40,20 40,60 30,70 20,60"/>
+                <!-- セグメントg (中央) -->
+                <polygon class="segment" id="${id}-g" points="30,70 70,70 60,80 40,80"/>
             </svg>
         `;
 
-        // 日付用7セグメントSVG（高さ50px、間隔5px）
+        // 日付用7セグメントSVG（高さ150px、幅100px）
         const dateSegmentSVG = (id) => `
-            <svg width="40" height="50" viewBox="0 0 40 51">
-                <!-- セグメントa（上部水平） -->
-                <polygon class="date-segment" id="${id}-a" points="10,1.5 30,1.5 32,3.5 30,5.5 10,5.5 8,3.5"/>
-                <!-- セグメントb（右上垂直） -->
-                <polygon class="date-segment" id="${id}-b" points="32,8.5 34,6.5 36,8.5 36,21 34,23 32,21"/>
-                <!-- セグメントc（右下垂直） -->
-                <polygon class="date-segment" id="${id}-c" points="32,31 34,29 36,31 36,41.5 34,43.5 32,41.5"/>
-                <!-- セグメントd（下部水平） -->
-                <polygon class="date-segment" id="${id}-d" points="10,48.5 30,48.5 32,46.5 30,44.5 10,44.5 8,46.5"/>
-                <!-- セグメントe（左下垂直） -->
-                <polygon class="date-segment" id="${id}-e" points="4,31 6,29 8,31 8,41.5 6,43.5 4,41.5"/>
-                <!-- セグメントf（左上垂直） -->
-                <polygon class="date-segment" id="${id}-f" points="4,8.5 6,6.5 8,8.5 8,21 6,23 4,21"/>
-                <!-- セグメントg（中部水平） -->
-                <polygon class="date-segment" id="${id}-g" points="10,24 30,24 32,26 30,28 10,28 8,26"/>
+            <svg width="100" height="150" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">
+                <!-- セグメントa (上) -->
+                <polygon class="date-segment" id="${id}-a" points="30,10 70,10 60,20 40,20"/>
+                <!-- セグメントb (右上) -->
+                <polygon class="date-segment" id="${id}-b" points="70,10 80,20 80,60 70,70 60,60 60,20"/>
+                <!-- セグメントc (右下) -->
+                <polygon class="date-segment" id="${id}-c" points="70,80 80,90 80,130 70,140 60,130 60,90"/>
+                <!-- セグメントd (下) -->
+                <polygon class="date-segment" id="${id}-d" points="30,140 70,140 60,130 40,130"/>
+                <!-- セグメントe (左下) -->
+                <polygon class="date-segment" id="${id}-e" points="20,90 30,80 40,90 40,130 30,140 20,130"/>
+                <!-- セグメントf (左上) -->
+                <polygon class="date-segment" id="${id}-f" points="20,20 30,10 40,20 40,60 30,70 20,60"/>
+                <!-- セグメントg (中央) -->
+                <polygon class="date-segment" id="${id}-g" points="30,70 70,70 60,80 40,80"/>
             </svg>
         `;
 
@@ -200,11 +196,9 @@
                     if (element) {
                         if (Math.random() > 0.5) {
                             element.style.fill = 'white';
-                            element.style.stroke = 'white';
                             element.classList.remove('off');
                         } else {
                             element.style.fill = '#333333';
-                            element.style.stroke = '#333333';
                             element.classList.add('off');
                         }
                     }
@@ -217,11 +211,9 @@
                     if (element) {
                         if (Math.random() > 0.5) {
                             element.style.fill = 'orange';
-                            element.style.stroke = 'orange';
                             element.classList.remove('off');
                         } else {
                             element.style.fill = '#333333';
-                            element.style.stroke = '#333333';
                             element.classList.add('off');
                         }
                     }
@@ -254,7 +246,6 @@
                         const element = document.getElementById(`${digitId}-${segment}`);
                         if (element) {
                             element.style.fill = '#333333';
-                            element.style.stroke = '#333333';
                             element.classList.add('off');
                         }
                     });
@@ -264,11 +255,9 @@
                         if (element) {
                             if (patterns[digit].includes(segment)) {
                                 element.style.fill = 'white';
-                                element.style.stroke = 'white';
                                 element.classList.remove('off');
                             } else {
                                 element.style.fill = '#333333';
-                                element.style.stroke = '#333333';
                                 element.classList.add('off');
                             }
                         }
@@ -285,11 +274,9 @@
                     if (element) {
                         if (patterns[digit].includes(segment)) {
                             element.style.fill = 'orange';
-                            element.style.stroke = 'orange';
                             element.classList.remove('off');
                         } else {
                             element.style.fill = '#333333';
-                            element.style.stroke = '#333333';
                             element.classList.add('off');
                         }
                     }
@@ -313,7 +300,6 @@
                     const element = document.getElementById(`${digitId}-${segment}`);
                     if (element) {
                         element.style.fill = 'white';
-                        element.style.stroke = 'white';
                         element.classList.remove('off');
                     }
                 });
@@ -324,7 +310,6 @@
                     const element = document.getElementById(`${digitId}-${segment}`);
                     if (element) {
                         element.style.fill = 'orange';
-                        element.style.stroke = 'orange';
                         element.classList.remove('off');
                     }
                 });
@@ -335,7 +320,7 @@
         testDisplay();
 
         // シャッフルアニメーションと時計更新
-        let clockInterval; // setIntervalを保持
+        let clockInterval;
         let shuffleCount = 0;
         const shuffleInterval = setInterval(() => {
             shuffleSegments();
@@ -343,7 +328,7 @@
             if (shuffleCount >= 5) {
                 clearInterval(shuffleInterval);
                 updateClock();
-                clockInterval = setInterval(updateClock, 1000); // グローバル変数に保存
+                clockInterval = setInterval(updateClock, 1000);
             }
         }, 100);
 
