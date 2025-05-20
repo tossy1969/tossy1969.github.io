@@ -22,7 +22,7 @@
 </head>
 <body>
     <iframe id="displayFrame" src="/weather.html" allow="autoplay"></iframe>
-    <audio id="ringAudio" src="ring.mp3" preload="auto" autoplay playsinline></audio>
+    <audio id="ringAudio" src="ring.mp3" preload="auto"></audio>
 
     <script>
         console.log("index.html読み込み: Version 1.0.9");
@@ -114,56 +114,40 @@
             setTimeout(checkTime, 60 * 1000);
         }
 
-        // ring.mp3再生
-        function playRing() {
-            audio.currentTime = 0;
-            audio.muted = false; // ミュート解除（念のため）
+        // ring.mp3再生（複数回リトライ）
+        async function playRing() {
+            const maxAttempts = 3;
+            let attempt = 1;
 
-            // メディアが再生可能か確認
-            if (audio.readyState >= 2) { // HAVE_CURRENT_DATA以上
-                const playPromise = audio.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        console.log(`ring.mp3再生成功: ${getCachedTime().timeString}`);
-                    }).catch(e => {
-                        console.error(`ring.mp3再生失敗: ${getCachedTime().timeString}, エラー:`, e);
-                        // 最大3回の再試行
-                        let attempts = 0;
-                        const maxAttempts = 3;
-                        function retryPlay() {
-                            if (attempts >= maxAttempts) {
-                                console.error(`ring.mp3再試行上限到達: ${getCachedTime().timeString}`);
-                                return;
-                            }
-                            attempts++;
-                            setTimeout(() => {
-                                audio.currentTime = 0;
-                                audio.play().then(() => {
-                                    console.log(`ring.mp3再試行${attempts}成功: ${getCachedTime().timeString}`);
-                                }).catch(e2 => {
-                                    console.error(`ring.mp3再試行${attempts}失敗: ${getCachedTime().timeString}, エラー:`, e2);
-                                    retryPlay();
-                                });
-                            }, 1000 * attempts); // 1秒、2秒、3秒後に再試行
-                        }
-                        retryPlay();
-                    });
-                } else {
-                    // Promise非サポート（非常に古いFirefoxの場合）
-                    try {
-                        audio.play();
-                        console.log(`ring.mp3再生成功（非Promise）: ${getCachedTime().timeString}`);
-                    } catch (e) {
-                        console.error(`ring.mp3再生失敗（非Promise）: ${getCachedTime().timeString}, エラー:`, e);
+            while (attempt <= maxAttempts) {
+                try {
+                    audio.currentTime = 0;
+                    await audio.play();
+                    console.log(`ring.mp3再生成功 (試行${attempt}): ${getCachedTime().timeString}`);
+                    return; // 成功したら終了
+                } catch (e) {
+                    console.error(`ring.mp3再生失敗 (試行${attempt}): ${getCachedTime().timeString}, エラー:`, e);
+                    if (attempt === maxAttempts) {
+                        console.error(`ring.mp3再生最終失敗: ${getCachedTime().timeString}`);
+                        return;
                     }
+                    await wait(500); // 0.5秒待機してリトライ
+                    attempt++;
                 }
-            } else {
-                // メディアが準備できていない場合、canplayを待つ
-                console.log(`ring.mp3未準備: readyState=${audio.readyState}, 待機中`);
-                audio.addEventListener('canplay', function handler() {
-                    audio.removeEventListener('canplay', handler);
-                    playRing(); // 準備完了後、再度再生試行
-                }, { once: true });
+            }
+        }
+
+        // AudioContextを初期化（古いFirefox向け）
+        function initializeAudioContext() {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+                const context = new AudioContext();
+                // ダミー音声でコンテキストをアクティブ化
+                const source = context.createBufferSource();
+                source.buffer = context.createBuffer(1, 1, 22050);
+                source.connect(context.destination);
+                source.start(0);
+                console.log('AudioContext初期化完了');
             }
         }
 
@@ -191,8 +175,10 @@
         // 初期化
         function init() {
             audio.onloadeddata = () => console.log('ring.mp3ロード成功');
-            audio.onerror = (e) => console.error('ring.mp3ロード失敗:', e);
-            audio.muted = false; // 初期状態で非ミュート
+            audio.onerror = () => console.error('ring.mp3ロード失敗');
+
+            // AudioContext初期化
+            initializeAudioContext();
 
             isClockOnly = isClockOnlyTime();
             const timestamp = Date.now();
