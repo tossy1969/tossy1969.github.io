@@ -22,7 +22,7 @@
 </head>
 <body>
     <iframe id="displayFrame" src="/weather.html"></iframe>
-    <audio id="ringAudio" src="ring.mp3" preload="auto" loop="false"></audio>
+    <audio id="ringAudio" src="ring.mp3" preload="auto"></audio>
 
     <script>
         var frame = document.getElementById('displayFrame');
@@ -106,23 +106,16 @@
         function playRing() {
             audio.pause();
             audio.currentTime = 0;
-            audio.muted = false;
-            audio.volume = 1.0;
-            audio.src = '/ring.mp3?t=' + Date.now(); // キャッシュ回避
-            audio.load(); // 音声ファイルの再読み込み
-            let attempts = 0;
-            const maxAttempts = 5;
-            function tryPlay() {
-                attempts++;
-                try {
-                    audio.play();
-                } catch (e) {
-                    if (attempts < maxAttempts) {
-                        setTimeout(tryPlay, 300); // 0.3秒後にリトライ
-                    }
-                }
+            // 再生を強制的に試みる
+            var playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(function() {
+                    // エラー時、短い遅延後に再試行
+                    setTimeout(function() {
+                        audio.play();
+                    }, 500);
+                });
             }
-            tryPlay();
         }
 
         // 次の再生時刻スケジュール
@@ -143,7 +136,7 @@
                 }
             }
             if (nextRing === null) {
-                nextRing = ringMinutes[0] + 24 * 60; // 翌日の最初の時間
+                nextRing = ringMinutes[0] + 24 * 60;
             }
             var minutesToNext = (nextRing - currentMinutes + 24 * 60) % (24 * 60);
             var msToNext = minutesToNext * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
@@ -156,6 +149,13 @@
 
         // 初期化
         function init() {
+            // ユーザー操作をシミュレートして自動再生制限を回避
+            document.body.addEventListener('click', function() {
+                audio.play();
+            }, { once: true });
+            // 初回再生を即座に試みる
+            audio.play();
+
             isClockOnly = isClockOnlyTime();
             var timestamp = Date.now();
             frame.src = isClockOnly ? '/clock.html?t=' + timestamp : '/weather.html?t=' + timestamp;
