@@ -22,7 +22,7 @@
 </head>
 <body>
     <iframe id="displayFrame" src="/weather.html"></iframe>
-    <audio id="ringAudio" src="ring.mp3" preload="auto"></audio>
+    <audio id="ringAudio" src="ring.mp3" preload="auto" autoplay></audio>
 
     <script>
         console.log("index.html読み込み: Version 1.0.9");
@@ -103,35 +103,29 @@
                 console.log('Clock専用時間帯開始: ' + frame.src);
             } else if (!isClockOnly && wasClockOnly) {
                 console.log('通常ローテーション再開');
-                currentIndex = -1;
+                currentIndex = -1; // 次の switchPage で 0 から開始
                 switchPage();
             }
             setTimeout(checkTime, 60 * 1000);
         }
 
-        // ring.mp3再生（修正）
+        // ring.mp3再生
         function playRing() {
             audio.pause();
             audio.currentTime = 0;
-            // Promise ベースで再生を試みる
-            var playPromise = audio.play();
-            if (playPromise !== undefined) {
-                playPromise.then(function() {
-                    console.log('ring.mp3再生成功: ' + getCachedTime().timeString);
-                }).catch(function(error) {
-                    console.log('ring.mp3再生失敗: ' + getCachedTime().timeString + ', エラー: ' + error);
-                    // 0.5秒後にリトライ
-                    setTimeout(function() {
-                        var retryPromise = audio.play();
-                        if (retryPromise !== undefined) {
-                            retryPromise.then(function() {
-                                console.log('ring.mp3再試行成功: ' + getCachedTime().timeString);
-                            }).catch(function(error2) {
-                                console.log('ring.mp3再試行失敗: ' + getCachedTime().timeString + ', エラー: ' + error2);
-                            });
-                        }
-                    }, 500);
-                });
+            try {
+                audio.play();
+                console.log('ring.mp3再生成功: ' + getCachedTime().timeString);
+            } catch (e) {
+                console.log('ring.mp3再生失敗: ' + getCachedTime().timeString + ', エラー: ' + e);
+                setTimeout(function() {
+                    try {
+                        audio.play();
+                        console.log('ring.mp3再試行成功: ' + getCachedTime().timeString);
+                    } catch (e2) {
+                        console.log('ring.mp3再試行失敗: ' + getCachedTime().timeString + ', エラー: ' + e2);
+                    }
+                }, 500);
             }
         }
 
@@ -170,16 +164,6 @@
         function init() {
             audio.onloadeddata = function() { console.log('ring.mp3ロード成功'); };
             audio.onerror = function() { console.log('ring.mp3ロード失敗'); };
-
-            // 自動再生制限を回避するためのダミー操作
-            function simulateUserInteraction() {
-                var event = new Event('click');
-                document.dispatchEvent(event);
-                console.log('ダミー操作を実行: 自動再生制限回避');
-            }
-
-            // ページ読み込み時にダミー操作を実行
-            simulateUserInteraction();
 
             isClockOnly = isClockOnlyTime();
             var timestamp = Date.now();
