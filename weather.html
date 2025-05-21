@@ -40,13 +40,13 @@
             width: 180px;
             height: 180px;
             margin: 0 auto;
-            display: none; /* 初期状態で非表示 */
+            display: none; /* 初期非表示 */
         }
         .weather-icon-placeholder {
             width: 180px;
             height: 180px;
             margin: 0 auto;
-            display: block; /* 初期状態で表示 */
+            display: block; /* 初期表示 */
             font-size: 100px;
             color: #999;
             line-height: 180px;
@@ -56,7 +56,7 @@
             display: none; /* データ取得後に非表示 */
         }
         .weather-icon-placeholder.error {
-            display: block; /* エラー時も表示 */
+            display: block; /* エラー時表示 */
         }
         td[data-weather="02d"] img.weather-icon,
         td[data-weather="02n"] img.weather-icon,
@@ -239,6 +239,14 @@
             return `${baseIcon}${isDay ? 'd' : 'n'}`;
         }
 
+        // 12時間表記に変換
+        function formatHour(hour) {
+            const h = parseInt(hour);
+            const period = h < 12 ? 'AM' : 'PM';
+            const displayHour = h % 12 === 0 ? 12 : h % 12;
+            return `${displayHour}${period}`;
+        }
+
         // 背景色を設定する関数
         function setBackgroundColor(cell, icon) {
             if (icon === 'error') {
@@ -257,29 +265,28 @@
         }
 
         // 雨ドットを動的に追加
-        function addRainDots(cell, icon) {
-            let rainDots = cell.querySelector('.rain-dots');
-            if (!rainDots && ['09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n'].includes(icon)) {
-                rainDots = document.createElement('div');
-                rainDots.className = 'rain-dots';
-                cell.insertBefore(rainDots, cell.firstChild);
-            }
-            if (rainDots) {
-                rainDots.innerHTML = '';
-                if (['09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n'].includes(icon)) {
-                    for (let i = 0; i < 10; i++) {
-                        const dot = document.createElement('span');
-                        dot.className = 'rain-dot';
-                        if (i % 2 === 0) {
-                            dot.classList.add('blue');
-                        }
-                        dot.style.left = `${Math.random() * 100}%`;
-                        dot.style.animationDelay = `${Math.random()}s`;
-                        dot.style.animationDuration = `${0.5 + Math.random()}s`;
-                        rainDots.appendChild(dot);
-                    }
+        function addRainDots() {
+            const rainCells = document.querySelectorAll('td[data-weather="09d"], td[data-weather="09n"], td[data-weather="10d"], td[data-weather="10n"], td[data-weather="11d"], td[data-weather="11n"], td[data-weather="13d"], td[data-weather="13n"]');
+            rainCells.forEach(cell => {
+                let rainDots = cell.querySelector('.rain-dots');
+                if (!rainDots) {
+                    rainDots = document.createElement('div');
+                    rainDots.className = 'rain-dots';
+                    cell.insertBefore(rainDots, cell.firstChild);
                 }
-            }
+                rainDots.innerHTML = '';
+                for (let i = 0; i < 10; i++) {
+                    const dot = document.createElement('span');
+                    dot.className = 'rain-dot';
+                    if (i % 2 === 0) {
+                        dot.classList.add('blue');
+                    }
+                    dot.style.left = `${Math.random() * 100}%`;
+                    dot.style.animationDelay = `${Math.random()}s`;
+                    dot.style.animationDuration = `${0.5 + Math.random()}s`;
+                    rainDots.appendChild(dot);
+                }
+            });
         }
 
         // 現在時刻を取得し、次の「3時間ごとの時刻」に揃える
@@ -357,19 +364,41 @@
                             const hour = item.time.getHours();
                             const icon = getIconWithDayNight(item.weathercode, hour);
                             const time = item.time;
-                            const hours = time.getHours().toString().padStart(2, '0');
+                            const displayHour = formatHour(hour);
                             const temperature = `${item.temperature}℃`;
                             cell.querySelector('img').src = `https://openweathermap.org/img/wn/${icon}@2x.png?cb=${cacheBuster}`;
                             cell.querySelector('img').alt = item.weathercode in weatherCodeMap ? '天気' : '不明';
                             cell.querySelector('img').style.display = 'block';
                             cell.querySelector('.weather-icon-placeholder').classList.add('hidden');
                             cell.querySelector('.weather-icon-placeholder').classList.remove('error');
-                            cell.querySelector('.time').textContent = `${hours}:00`;
-                            cell.dataset.hour = `${hours}:00`;
+                            cell.querySelector('.time').textContent = displayHour;
+                            cell.dataset.hour = displayHour;
                             cell.dataset.temperature = temperature;
                             cell.setAttribute('data-weather', icon);
                             setBackgroundColor(cell, icon);
-                            addRainDots(cell, icon);
+
+                            let rainDots = cell.querySelector('.rain-dots');
+                            if (!rainDots && ['09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n'].includes(icon)) {
+                                rainDots = document.createElement('div');
+                                rainDots.className = 'rain-dots';
+                                cell.insertBefore(rainDots, cell.firstChild);
+                            }
+                            if (rainDots) {
+                                rainDots.innerHTML = '';
+                                if (['09d', '09n', '10d', '10n', '11d', '11n', '13d', '13n'].includes(icon)) {
+                                    for (let i = 0; i < 10; i++) {
+                                        const dot = document.createElement('span');
+                                        dot.className = 'rain-dot';
+                                        if (i % 2 === 0) {
+                                            dot.classList.add('blue');
+                                        }
+                                        dot.style.left = `${Math.random() * 100}%`;
+                                        dot.style.animationDelay = `${Math.random()}s`;
+                                        dot.style.animationDuration = `${0.5 + Math.random()}s`;
+                                        rainDots.appendChild(dot);
+                                    }
+                                }
+                            }
                         } else {
                             // データ不足の場合
                             cell.querySelector('img').src = '';
@@ -388,6 +417,7 @@
                             }
                         }
                     });
+                    addRainDots();
                 })
                 .catch(error => {
                     if (retryCount < maxRetries) {
@@ -418,11 +448,12 @@
             const offset = parseInt(cell.querySelector('.time').getAttribute('data-hour'));
             const startHour = getStartHour();
             const time = new Date(startHour.getTime() + offset * 60 * 60 * 1000);
-            const hours = time.getHours().toString().padStart(2, '0');
-            cell.querySelector('.time').textContent = `${hours}:00`;
-            cell.dataset.hour = `${hours}:00`;
+            const hours = time.getHours();
+            const displayHour = formatHour(hours);
+            cell.querySelector('.time').textContent = displayHour;
+            cell.dataset.hour = displayHour;
             cell.dataset.temperature = '--℃';
-            // 背景色は設定せず、デフォルトの白色（#fff）を使用
+            // 初期状態では背景色を設定しない（デフォルトは#fff）
         });
 
         // 初回データ取得
