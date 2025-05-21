@@ -32,6 +32,17 @@
         var pages = ['/weather.html', '/clock.html', '/metro.html', '/clock.html'];
         var displayDurations = [30000, 5000, 30000, 5000];
         var ringTimes = ['09:00', '12:00', '15:00', '18:00', '21:00'];
+        var audioContext = null;
+
+        // Web Audio APIで音声コンテキストを初期化
+        function initAudioContext() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            var source = audioContext.createMediaElementSource(audio);
+            source.connect(audioContext.destination);
+        }
 
         // キャッシュ付き時刻取得
         var cachedTime = null;
@@ -104,14 +115,17 @@
 
         // ring.mp3再生
         function playRing() {
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
             audio.pause();
             audio.currentTime = 0;
-            // 再生を強制的に試みる
             var playPromise = audio.play();
             if (playPromise !== undefined) {
                 playPromise.catch(function() {
                     // エラー時、短い遅延後に再試行
                     setTimeout(function() {
+                        if (audioContext) audioContext.resume();
                         audio.play();
                     }, 500);
                 });
@@ -149,13 +163,8 @@
 
         // 初期化
         function init() {
-            // ユーザー操作をシミュレートして自動再生制限を回避
-            document.body.addEventListener('click', function() {
-                audio.play();
-            }, { once: true });
-            // 初回再生を即座に試みる
-            audio.play();
-
+            initAudioContext(); // AudioContextを初期化
+            audio.play(); // 初回再生を試みる
             isClockOnly = isClockOnlyTime();
             var timestamp = Date.now();
             frame.src = isClockOnly ? '/clock.html?t=' + timestamp : '/weather.html?t=' + timestamp;
