@@ -22,10 +22,10 @@
 </head>
 <body>
     <iframe id="displayFrame" src="/weather.html"></iframe>
-    <audio id="ringAudio" src="ring.mp3" preload="auto" muted></audio>
+    <audio id="ringAudio" src="ring.mp3" preload="auto"></audio>
 
     <script>
-        console.log("index.html読み込み: Version 1.0.10");
+        console.log("index.html読み込み: Version 1.0.9");
         var frame = document.getElementById('displayFrame');
         var audio = document.getElementById('ringAudio');
         var isClockOnly = false;
@@ -33,7 +33,6 @@
         var pages = ['/weather.html', '/clock.html', '/metro.html', '/clock.html'];
         var displayDurations = [30000, 5000, 30000, 5000];
         var ringTimes = ['09:00', '12:00', '15:00', '18:00', '21:00'];
-        var switchPageTimeout = null; // switchPage のタイマー管理
 
         // キャッシュ付き時刻取得
         var cachedTime = null;
@@ -41,6 +40,7 @@
         function getCachedTime() {
             var now = new Date();
             var today = now.toDateString();
+
             if (!lastTimeUpdate || lastTimeUpdate.toDateString() !== today) {
                 cachedTime = {
                     hours: now.getHours(),
@@ -80,7 +80,6 @@
 
         // ページ切り替え
         function switchPage() {
-            if (switchPageTimeout) clearTimeout(switchPageTimeout); // 既存のタイマーをクリア
             if (isClockOnly) {
                 var timestamp = Date.now();
                 frame.src = '/clock.html?t=' + timestamp;
@@ -91,15 +90,14 @@
             var timestamp = Date.now();
             frame.src = pages[currentIndex] + '?t=' + timestamp;
             console.log('ページ切り替え: ' + frame.src + ', 表示時間: ' + displayDurations[currentIndex] + 'ms');
-            switchPageTimeout = setTimeout(switchPage, displayDurations[currentIndex]);
+            setTimeout(switchPage, displayDurations[currentIndex]);
         }
 
-        // 時間帯チェック（60秒間隔）
+        // 時間帯チェック
         function checkTime() {
             var wasClockOnly = isClockOnly;
             isClockOnly = isClockOnlyTime();
             if (isClockOnly && !wasClockOnly) {
-                if (switchPageTimeout) clearTimeout(switchPageTimeout); // ローテーション停止
                 var timestamp = Date.now();
                 frame.src = '/clock.html?t=' + timestamp;
                 console.log('Clock専用時間帯開始: ' + frame.src);
@@ -111,73 +109,30 @@
             setTimeout(checkTime, 60 * 1000);
         }
 
-        // 20:00と4:50のタイマー設定
-        function scheduleTimeSwitches() {
-            var now = new Date();
-            var currentMinutes = now.getHours() * 60 + now.getMinutes();
-            var clockOnlyStart = 20 * 60; // 20:00
-            var clockOnlyEnd = 4 * 60 + 50; // 4:50
-            var msToNextSwitch = 0;
-
-            // 次の切り替え時刻を計算
-            if (currentMinutes < clockOnlyEnd) {
-                msToNextSwitch = (clockOnlyEnd - currentMinutes) * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
-                console.log('次の切り替え: 4:50, ' + msToNextSwitch + 'ms後');
-                setTimeout(function() {
-                    isClockOnly = false;
-                    console.log('4:50 切り替え: 通常ローテーション開始');
-                    currentIndex = -1;
-                    switchPage();
-                    scheduleTimeSwitches();
-                }, msToNextSwitch);
-            } else if (currentMinutes < clockOnlyStart) {
-                msToNextSwitch = (clockOnlyStart - currentMinutes) * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
-                console.log('次の切り替え: 20:00, ' + msToNextSwitch + 'ms後');
-                setTimeout(function() {
-                    isClockOnly = true;
-                    if (switchPageTimeout) clearTimeout(switchPageTimeout);
-                    var timestamp = Date.now();
-                    frame.src = '/clock.html?t=' + timestamp;
-                    console.log('20:00 切り替え: Clock専用時間帯開始');
-                    scheduleTimeSwitches();
-                }, msToNextSwitch);
-            } else {
-                msToNextSwitch = ((24 * 60 + clockOnlyEnd) - currentMinutes) * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
-                console.log('次の切り替え: 翌日4:50, ' + msToNextSwitch + 'ms後');
-                setTimeout(function() {
-                    isClockOnly = false;
-                    console.log('4:50 切り替え: 通常ローテーション開始');
-                    currentIndex = -1;
-                    switchPage();
-                    scheduleTimeSwitches();
-                }, msToNextSwitch);
-            }
-        }
-
-        // ring.mp3再生（複数回リトライ）
+        // ring.mp3再生（修正）
         function playRing() {
             audio.pause();
             audio.currentTime = 0;
-            audio.muted = false; // 再生時にミュート解除
-            let attempts = 0;
-            const maxAttempts = 5;
-            const retryDelay = 500;
-
-            function attemptPlay() {
-                attempts++;
-                audio.play().then(() => {
+            // Promise ベースで再生を試みる
+            var playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.then(function() {
                     console.log('ring.mp3再生成功: ' + getCachedTime().timeString);
-                }).catch((e) => {
-                    console.log('ring.mp3再生失敗 (試行' + attempts + '): ' + getCachedTime().timeString + ', エラー: ' + e);
-                    if (attempts < maxAttempts) {
-                        setTimeout(attemptPlay, retryDelay);
-                    } else {
-                        console.log('ring.mp3再生失敗: 最大試行回数到達 (' + maxAttempts + '回)');
-                    }
+                }).catch(function(error) {
+                    console.log('ring.mp3再生失敗: ' + getCachedTime().timeString + ', エラー: ' + error);
+                    // 0.5秒後にリトライ
+                    setTimeout(function() {
+                        var retryPromise = audio.play();
+                        if (retryPromise !== undefined) {
+                            retryPromise.then(function() {
+                                console.log('ring.mp3再試行成功: ' + getCachedTime().timeString);
+                            }).catch(function(error2) {
+                                console.log('ring.mp3再試行失敗: ' + getCachedTime().timeString + ', エラー: ' + error2);
+                            });
+                        }
+                    }, 500);
                 });
             }
-
-            attemptPlay();
         }
 
         // 次の再生時刻スケジュール
@@ -211,32 +166,21 @@
             }, msToNext);
         }
 
-        // 初回ミュート再生（複数回リトライ）
-        function attemptInitialPlay(attempts = 0, maxAttempts = 3, retryDelay = 500) {
-            if (attempts >= maxAttempts) {
-                console.log('初回ミュート再生失敗: 最大試行回数到達 (' + maxAttempts + '回)');
-                return;
-            }
-            audio.play().then(() => {
-                console.log('初回ミュート再生成功');
-                audio.pause();
-                audio.currentTime = 0;
-                audio.muted = false; // 以降の再生のためにミュート解除
-            }).catch((e) => {
-                console.log('初回ミュート再生失敗 (試行' + (attempts + 1) + '): ' + e);
-                setTimeout(() => attemptInitialPlay(attempts + 1, maxAttempts, retryDelay), retryDelay);
-            });
-        }
-
         // 初期化
         function init() {
             audio.onloadeddata = function() { console.log('ring.mp3ロード成功'); };
             audio.onerror = function() { console.log('ring.mp3ロード失敗'); };
 
-            // 初回ミュート再生
-            attemptInitialPlay();
+            // 自動再生制限を回避するためのダミー操作
+            function simulateUserInteraction() {
+                var event = new Event('click');
+                document.dispatchEvent(event);
+                console.log('ダミー操作を実行: 自動再生制限回避');
+            }
 
-            // 通常の初期化処理
+            // ページ読み込み時にダミー操作を実行
+            simulateUserInteraction();
+
             isClockOnly = isClockOnlyTime();
             var timestamp = Date.now();
             frame.src = isClockOnly ? '/clock.html?t=' + timestamp : '/weather.html?t=' + timestamp;
@@ -247,7 +191,6 @@
             }
             checkTime();
             scheduleNextRing();
-            scheduleTimeSwitches(); // 時間帯切り替えタイマー開始
         }
 
         window.onload = init;
