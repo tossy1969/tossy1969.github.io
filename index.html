@@ -22,7 +22,7 @@
 </head>
 <body>
     <iframe id="displayFrame" src="/weather.html"></iframe>
-    <audio id="ringAudio" src="ring.mp3" preload="auto" autoplay></audio>
+    <audio id="ringAudio" src="ring.mp3" preload="auto" muted></audio>
 
     <script>
         console.log("index.html読み込み: Version 1.0.9");
@@ -40,7 +40,6 @@
         function getCachedTime() {
             var now = new Date();
             var today = now.toDateString();
-
             if (!lastTimeUpdate || lastTimeUpdate.toDateString() !== today) {
                 cachedTime = {
                     hours: now.getHours(),
@@ -73,8 +72,8 @@
         function isClockOnlyTime() {
             var time = getCachedTime();
             var totalMinutes = time.hours * 60 + time.minutes;
-            var start = 20 * 60; // 20:00 = 1200分
-            var end = 4 * 60 + 50; // 4:50 = 290分
+            var start = 20 * 60;
+            var end = 4 * 60 + 50;
             return (totalMinutes >= start && totalMinutes < 24 * 60) || (totalMinutes < end);
         }
 
@@ -103,30 +102,36 @@
                 console.log('Clock専用時間帯開始: ' + frame.src);
             } else if (!isClockOnly && wasClockOnly) {
                 console.log('通常ローテーション再開');
-                currentIndex = -1; // 次の switchPage で 0 から開始
+                currentIndex = -1;
                 switchPage();
             }
             setTimeout(checkTime, 60 * 1000);
         }
 
-        // ring.mp3再生
+        // ring.mp3再生（複数回リトライ）
         function playRing() {
             audio.pause();
             audio.currentTime = 0;
-            try {
-                audio.play();
-                console.log('ring.mp3再生成功: ' + getCachedTime().timeString);
-            } catch (e) {
-                console.log('ring.mp3再生失敗: ' + getCachedTime().timeString + ', エラー: ' + e);
-                setTimeout(function() {
-                    try {
-                        audio.play();
-                        console.log('ring.mp3再試行成功: ' + getCachedTime().timeString);
-                    } catch (e2) {
-                        console.log('ring.mp3再試行失敗: ' + getCachedTime().timeString + ', エラー: ' + e2);
+            audio.muted = false; // 再生時にミュート解除
+            let attempts = 0;
+            const maxAttempts = 5;
+            const retryDelay = 500;
+
+            function attemptPlay() {
+                attempts++;
+                audio.play().then(() => {
+                    console.log('ring.mp3再生成功: ' + getCachedTime().timeString);
+                }).catch((e) => {
+                    console.log('ring.mp3再生失敗 (試行' + attempts + '): ' + getCachedTime().timeString + ', エラー: ' + e);
+                    if (attempts < maxAttempts) {
+                        setTimeout(attemptPlay, retryDelay);
+                    } else {
+                        console.log('ring.mp3再生失敗: 最大試行回数到達 (' + maxAttempts + '回)');
                     }
-                }, 500);
+                });
             }
+
+            attemptPlay();
         }
 
         // 次の再生時刻スケジュール
@@ -165,6 +170,18 @@
             audio.onloadeddata = function() { console.log('ring.mp3ロード成功'); };
             audio.onerror = function() { console.log('ring.mp3ロード失敗'); };
 
+            // 初回ミュート再生でオートプレイ許可を獲得
+            audio.play().then(() => {
+                console.log('初回ミュート再生成功');
+                audio.pause();
+                audio.currentTime = 0;
+                audio.muted = false; // 以降の再生のためにミュート解除
+            }).catch((e) => {
+                console.log('初回ミュート再生失敗: ' + e);
+                // 失敗しても処理を続行（リトライは playRing で処理）
+            });
+
+            // 通常の初期化処理
             isClockOnly = isClockOnlyTime();
             var timestamp = Date.now();
             frame.src = isClockOnly ? '/clock.html?t=' + timestamp : '/weather.html?t=' + timestamp;
