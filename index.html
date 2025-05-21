@@ -22,7 +22,7 @@
 </head>
 <body>
     <iframe id="displayFrame" src="/weather.html"></iframe>
-    <audio id="ringAudio" src="ring.mp3" preload="auto"></audio>
+    <audio id="ringAudio" src="ring.mp3" preload="auto" loop="false"></audio>
 
     <script>
         var frame = document.getElementById('displayFrame');
@@ -106,17 +106,19 @@
         function playRing() {
             audio.pause();
             audio.currentTime = 0;
-            audio.muted = false; // ミュート解除
-            audio.volume = 1.0; // 音量を最大に
+            audio.muted = false;
+            audio.volume = 1.0;
+            audio.src = '/ring.mp3?t=' + Date.now(); // キャッシュ回避
+            audio.load(); // 音声ファイルの再読み込み
             let attempts = 0;
-            const maxAttempts = 3;
+            const maxAttempts = 5;
             function tryPlay() {
                 attempts++;
                 try {
                     audio.play();
                 } catch (e) {
                     if (attempts < maxAttempts) {
-                        setTimeout(tryPlay, 500); // 0.5秒後にリトライ
+                        setTimeout(tryPlay, 300); // 0.3秒後にリトライ
                     }
                 }
             }
@@ -141,7 +143,7 @@
                 }
             }
             if (nextRing === null) {
-                nextRing = ringMinutes[0] + 24 * 60;
+                nextRing = ringMinutes[0] + 24 * 60; // 翌日の最初の時間
             }
             var minutesToNext = (nextRing - currentMinutes + 24 * 60) % (24 * 60);
             var msToNext = minutesToNext * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
