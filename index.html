@@ -25,7 +25,6 @@
     <audio id="ringAudio" src="ring.mp3" preload="auto"></audio>
 
     <script>
-        console.log("index.html読み込み: Version 1.0.9");
         var frame = document.getElementById('displayFrame');
         var audio = document.getElementById('ringAudio');
         var isClockOnly = false;
@@ -49,7 +48,6 @@
                     timestamp: now.getTime()
                 };
                 lastTimeUpdate = now;
-                console.log('時刻更新: ' + cachedTime.timeString);
             } else {
                 var elapsed = now.getTime() - cachedTime.timestamp;
                 var expectedMinutes = Math.floor(elapsed / (60 * 1000));
@@ -63,7 +61,6 @@
                         timestamp: now.getTime()
                     };
                     lastTimeUpdate = now;
-                    console.log('時刻ずれ検出、更新: ' + cachedTime.timeString);
                 }
             }
             return cachedTime;
@@ -83,13 +80,11 @@
             if (isClockOnly) {
                 var timestamp = Date.now();
                 frame.src = '/clock.html?t=' + timestamp;
-                console.log('Clock専用時間帯: ' + frame.src);
                 return;
             }
             currentIndex = (currentIndex + 1) % pages.length;
             var timestamp = Date.now();
             frame.src = pages[currentIndex] + '?t=' + timestamp;
-            console.log('ページ切り替え: ' + frame.src + ', 表示時間: ' + displayDurations[currentIndex] + 'ms');
             setTimeout(switchPage, displayDurations[currentIndex]);
         }
 
@@ -100,50 +95,32 @@
             if (isClockOnly && !wasClockOnly) {
                 var timestamp = Date.now();
                 frame.src = '/clock.html?t=' + timestamp;
-                console.log('Clock専用時間帯開始: ' + frame.src);
             } else if (!isClockOnly && wasClockOnly) {
-                console.log('通常ローテーション再開');
                 currentIndex = -1;
                 switchPage();
             }
             setTimeout(checkTime, 60 * 1000);
         }
 
-        // ring.mp3再生（改良版）
-        function playRing(attempt = 1, maxAttempts = 5) {
-            if (attempt > maxAttempts) {
-                console.log('ring.mp3再生失敗: 最大試行回数(' + maxAttempts + ')に達しました');
-                return;
-            }
-
+        // ring.mp3再生
+        function playRing() {
             audio.pause();
             audio.currentTime = 0;
-            console.log('ring.mp3再生試行 #' + attempt + ': ' + getCachedTime().timeString);
-
-            // Promise ベースで再生
-            var playPromise = audio.play();
-            if (playPromise !== undefined) {
-                playPromise.then(function() {
-                    console.log('ring.mp3再生成功: ' + getCachedTime().timeString);
-                }).catch(function(error) {
-                    console.log('ring.mp3再生失敗 #' + attempt + ': ' + getCachedTime().timeString + ', エラー: ' + error);
-                    // 0.5秒後にリトライ
-                    setTimeout(function() {
-                        playRing(attempt + 1, maxAttempts);
-                    }, 500);
-                });
-            } else {
-                // Promise 未サポートの場合（古いブラウザ対策）
+            audio.muted = false; // ミュート解除
+            audio.volume = 1.0; // 音量を最大に
+            let attempts = 0;
+            const maxAttempts = 3;
+            function tryPlay() {
+                attempts++;
                 try {
                     audio.play();
-                    console.log('ring.mp3再生成功（非Promise）: ' + getCachedTime().timeString);
-                } catch (error) {
-                    console.log('ring.mp3再生失敗（非Promise） #' + attempt + ': ' + getCachedTime().timeString + ', エラー: ' + error);
-                    setTimeout(function() {
-                        playRing(attempt + 1, maxAttempts);
-                    }, 500);
+                } catch (e) {
+                    if (attempts < maxAttempts) {
+                        setTimeout(tryPlay, 500); // 0.5秒後にリトライ
+                    }
                 }
             }
+            tryPlay();
         }
 
         // 次の再生時刻スケジュール
@@ -169,8 +146,6 @@
             var minutesToNext = (nextRing - currentMinutes + 24 * 60) % (24 * 60);
             var msToNext = minutesToNext * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
 
-            console.log('次の再生予定: ' + ringTimes[ringMinutes.indexOf(nextRing) % ringTimes.length] + ', ' + msToNext + 'ms後');
-
             setTimeout(function() {
                 playRing();
                 scheduleNextRing();
@@ -179,15 +154,10 @@
 
         // 初期化
         function init() {
-            audio.onloadeddata = function() { console.log('ring.mp3ロード成功'); };
-            audio.onerror = function() { console.log('ring.mp3ロード失敗'); };
-
             isClockOnly = isClockOnlyTime();
             var timestamp = Date.now();
             frame.src = isClockOnly ? '/clock.html?t=' + timestamp : '/weather.html?t=' + timestamp;
-            console.log('初期ページ: ' + frame.src);
             if (!isClockOnly) {
-                console.log('初期ローテーション開始');
                 switchPage();
             }
             checkTime();
