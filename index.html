@@ -90,12 +90,12 @@
         function switchPage() {
             if (isClockOnly) {
                 var timestamp = Date.now();
-                frame.src = '/clock.html?t=' + timestamp;
+                frame.contentWindow.location.replace('/clock.html?t=' + timestamp);
                 return;
             }
             currentIndex = (currentIndex + 1) % pages.length;
             var timestamp = Date.now();
-            frame.src = pages[currentIndex] + '?t=' + timestamp;
+            frame.contentWindow.location.replace(pages[currentIndex] + '?t=' + timestamp);
             setTimeout(switchPage, displayDurations[currentIndex]);
         }
 
@@ -105,7 +105,7 @@
             isClockOnly = isClockOnlyTime();
             if (isClockOnly && !wasClockOnly) {
                 var timestamp = Date.now();
-                frame.src = '/clock.html?t=' + timestamp;
+                frame.contentWindow.location.replace('/clock.html?t=' + timestamp);
             } else if (!isClockOnly && wasClockOnly) {
                 currentIndex = -1;
                 switchPage();
@@ -167,7 +167,7 @@
             audio.play(); // 初回再生を試みる
             isClockOnly = isClockOnlyTime();
             var timestamp = Date.now();
-            frame.src = isClockOnly ? '/clock.html?t=' + timestamp : '/weather.html?t=' + timestamp;
+            frame.contentWindow.location.replace(isClockOnly ? '/clock.html?t=' + timestamp : '/weather.html?t=' + timestamp);
             if (!isClockOnly) {
                 switchPage();
             }
