@@ -21,13 +21,11 @@
     </style>
 </head>
 <body>
-    <div id="frameContainer">
-        <iframe id="displayFrame" src="/weather.html"></iframe>
-    </div>
+    <iframe id="displayFrame" src="/weather.html"></iframe>
     <audio id="ringAudio" src="ring.mp3" preload="auto" loop="false"></audio>
 
     <script>
-        var frameContainer = document.getElementById('frameContainer');
+        var frame = document.getElementById('displayFrame');
         var audio = document.getElementById('ringAudio');
         var isClockOnly = false;
         var currentIndex = 0;
@@ -77,26 +75,16 @@
             return (totalMinutes >= start && totalMinutes < 24 * 60) || (totalMinutes < end);
         }
 
-        // iframeを動的に更新
-        function updateFrame(src) {
-            var newFrame = document.createElement('iframe');
-            newFrame.id = 'displayFrame';
-            newFrame.src = src + '?t=' + Date.now();
-            newFrame.style.width = '100vw';
-            newFrame.style.height = '100vh';
-            newFrame.style.border = 'none';
-            frameContainer.innerHTML = '';
-            frameContainer.appendChild(newFrame);
-        }
-
         // ページ切り替え
         function switchPage() {
             if (isClockOnly) {
-                updateFrame('/clock.html');
+                var timestamp = Date.now();
+                frame.src = '/clock.html?t=' + timestamp;
                 return;
             }
             currentIndex = (currentIndex + 1) % pages.length;
-            updateFrame(pages[currentIndex]);
+            var timestamp = Date.now();
+            frame.src = pages[currentIndex] + '?t=' + timestamp;
             setTimeout(switchPage, displayDurations[currentIndex]);
         }
 
@@ -105,7 +93,8 @@
             var wasClockOnly = isClockOnly;
             isClockOnly = isClockOnlyTime();
             if (isClockOnly && !wasClockOnly) {
-                updateFrame('/clock.html');
+                var timestamp = Date.now();
+                frame.src = '/clock.html?t=' + timestamp;
             } else if (!isClockOnly && wasClockOnly) {
                 currentIndex = -1;
                 switchPage();
@@ -165,15 +154,47 @@
             }, msToNext);
         }
 
+        // 4:50 と 20:00 にリロードをスケジュール
+        function scheduleReload() {
+            var now = new Date();
+            var currentMinutes = now.getHours() * 60 + now.getMinutes();
+            var reloadTimes = ['04:50', '20:00'];
+            var reloadMinutes = [];
+            for (var i = 0; i < reloadTimes.length; i++) {
+                var parts = reloadTimes[i].split(':');
+                reloadMinutes.push(parseInt(parts[0]) * 60 + parseInt(parts[1]));
+            }
+
+            var nextReload = null;
+            for (var i = 0; i < reloadMinutes.length; i++) {
+                if (reloadMinutes[i] > currentMinutes) {
+                    nextReload = reloadMinutes[i];
+                    break;
+                }
+            }
+            if (nextReload === null) {
+                nextReload = reloadMinutes[0] + 24 * 60;
+            }
+            var minutesToNext = (nextReload - currentMinutes + 24 * 60) % (24 * 60);
+            var msToNext = minutesToNext * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
+
+            setTimeout(function() {
+                location.reload(true); // キャッシュを無視してリロード
+                scheduleReload();
+            }, msToNext);
+        }
+
         // 初期化
         function init() {
             isClockOnly = isClockOnlyTime();
-            updateFrame(isClockOnly ? '/clock.html' : '/weather.html');
+            var timestamp = Date.now();
+            frame.src = isClockOnly ? '/clock.html?t=' + timestamp : '/weather.html?t=' + timestamp;
             if (!isClockOnly) {
                 switchPage();
             }
             checkTime();
             scheduleNextRing();
+            scheduleReload();
         }
 
         window.onload = init;
