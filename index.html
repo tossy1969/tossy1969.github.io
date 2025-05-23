@@ -75,26 +75,16 @@
             return (totalMinutes >= start && totalMinutes < 24 * 60) || (totalMinutes < end);
         }
 
-        // iframeを再作成してキャッシュを回避
-        function setFrameSrc(url) {
-            var newFrame = document.createElement('iframe');
-            newFrame.id = 'displayFrame';
-            newFrame.src = url + '?t=' + Date.now() + '&r=' + Math.random(); // キャッシュ回避
-            newFrame.style.width = '100vw';
-            newFrame.style.height = '100vh';
-            newFrame.style.border = 'none';
-            frame.parentNode.replaceChild(newFrame, frame);
-            frame = newFrame;
-        }
-
         // ページ切り替え
         function switchPage() {
             if (isClockOnly) {
-                setFrameSrc('/clock.html');
+                var timestamp = Date.now();
+                frame.src = '/clock.html?t=' + timestamp;
                 return;
             }
             currentIndex = (currentIndex + 1) % pages.length;
-            setFrameSrc(pages[currentIndex]);
+            var timestamp = Date.now();
+            frame.src = pages[currentIndex] + '?t=' + timestamp;
             setTimeout(switchPage, displayDurations[currentIndex]);
         }
 
@@ -103,7 +93,8 @@
             var wasClockOnly = isClockOnly;
             isClockOnly = isClockOnlyTime();
             if (isClockOnly && !wasClockOnly) {
-                setFrameSrc('/clock.html');
+                var timestamp = Date.now();
+                frame.src = '/clock.html?t=' + timestamp;
             } else if (!isClockOnly && wasClockOnly) {
                 currentIndex = -1;
                 switchPage();
@@ -163,16 +154,46 @@
             }, msToNext);
         }
 
+        // 4:50 と 20:00 にリロードをスケジュール
+        function scheduleReload() {
+            var now = new Date();
+            var currentMinutes = now.getHours() * 60 + now.getMinutes();
+            var reloadTimes = ['04:50', '20:00'];
+            var reloadMinutes = [];
+            for (var i = 0; i < reloadTimes.length; i++) {
+                var parts = reloadTimes[i].split(':');
+                reloadMinutes.push(parseInt(parts[0]) * 60 + parseInt(parts[1]));
+            }
+
+            var nextReload = null;
+            for (var i = 0; i < reloadMinutes.length; i++) {
+                if (reloadMinutes[i] > currentMinutes) {
+                    nextReload = reloadMinutes[i];
+                    break;
+                }
+            }
+            if (nextReload === null) {
+                nextReload = reloadMinutes[0] + 24 * 60;
+            }
+            var minutesToNext = (nextReload - currentMinutes + 24 * 60) % (24 * 60);
+            var msToNext = minutesToNext * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
+
+            setTimeout(function() {
+                location.reload(true); // キャッシュ無視でリロード
+            }, msToNext);
+        }
+
         // 初期化
         function init() {
             isClockOnly = isClockOnlyTime();
             var timestamp = Date.now();
-            setFrameSrc(isClockOnly ? '/clock.html' : '/weather.html');
+            frame.src = isClockOnly ? '/clock.html?t=' + timestamp : '/weather.html?t=' + timestamp;
             if (!isClockOnly) {
                 switchPage();
             }
             checkTime();
             scheduleNextRing();
+            scheduleReload();
         }
 
         window.onload = init;
