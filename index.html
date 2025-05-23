@@ -32,6 +32,7 @@
         var pages = ['/weather.html', '/clock.html', '/metro.html', '/clock.html'];
         var displayDurations = [30000, 5000, 30000, 5000];
         var ringTimes = ['09:00', '12:00', '15:00', '18:00', '21:00'];
+        var ringTimeout = null; // 音声再生タイマーのハンドル
 
         // キャッシュ付き時刻取得
         var cachedTime = null;
@@ -104,7 +105,9 @@
 
         // ring.mp3再生
         function playRing() {
-            audio.pause();
+            if (!audio.paused) {
+                audio.pause(); // 再生中なら停止
+            }
             audio.currentTime = 0;
             audio.muted = false;
             audio.volume = 1.0;
@@ -115,6 +118,7 @@
             function tryPlay() {
                 attempts++;
                 try {
+                    if (!audio.paused) return; // 既に再生中の場合スキップ
                     audio.play();
                 } catch (e) {
                     if (attempts < maxAttempts) {
@@ -123,10 +127,18 @@
                 }
             }
             tryPlay();
+            // 再生終了後に状態リセット
+            audio.onended = function() {
+                audio.pause();
+                audio.currentTime = 0;
+            };
         }
 
         // 次の再生時刻スケジュール
         function scheduleNextRing() {
+            if (ringTimeout) {
+                clearTimeout(ringTimeout); // 既存のタイマーをクリア
+            }
             var now = new Date();
             var currentMinutes = now.getHours() * 60 + now.getMinutes();
             var ringMinutes = [];
@@ -148,7 +160,7 @@
             var minutesToNext = (nextRing - currentMinutes + 24 * 60) % (24 * 60);
             var msToNext = minutesToNext * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
 
-            setTimeout(function() {
+            ringTimeout = setTimeout(function() {
                 playRing();
                 scheduleNextRing();
             }, msToNext);
@@ -179,7 +191,7 @@
             var msToNext = minutesToNext * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
 
             setTimeout(function() {
-                location.reload(true); // キャッシュ無視でリロード
+                location.reload(true);
             }, msToNext);
         }
 
