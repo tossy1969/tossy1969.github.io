@@ -21,28 +21,19 @@
     </style>
 </head>
 <body>
-    <iframe id="displayFrame" src="/weather.html"></iframe>
-    <audio id="ringAudio" src="ring.mp3" preload="auto"></audio>
+    <div id="frameContainer">
+        <iframe id="displayFrame" src="/weather.html"></iframe>
+    </div>
+    <audio id="ringAudio" src="ring.mp3" preload="auto" loop="false"></audio>
 
     <script>
-        var frame = document.getElementById('displayFrame');
+        var frameContainer = document.getElementById('frameContainer');
         var audio = document.getElementById('ringAudio');
         var isClockOnly = false;
         var currentIndex = 0;
         var pages = ['/weather.html', '/clock.html', '/metro.html', '/clock.html'];
         var displayDurations = [30000, 5000, 30000, 5000];
         var ringTimes = ['09:00', '12:00', '15:00', '18:00', '21:00'];
-        var audioContext = null;
-
-        // Web Audio APIで音声コンテキストを初期化
-        function initAudioContext() {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
-            var source = audioContext.createMediaElementSource(audio);
-            source.connect(audioContext.destination);
-        }
 
         // キャッシュ付き時刻取得
         var cachedTime = null;
@@ -86,16 +77,26 @@
             return (totalMinutes >= start && totalMinutes < 24 * 60) || (totalMinutes < end);
         }
 
+        // iframeを動的に更新
+        function updateFrame(src) {
+            var newFrame = document.createElement('iframe');
+            newFrame.id = 'displayFrame';
+            newFrame.src = src + '?t=' + Date.now();
+            newFrame.style.width = '100vw';
+            newFrame.style.height = '100vh';
+            newFrame.style.border = 'none';
+            frameContainer.innerHTML = '';
+            frameContainer.appendChild(newFrame);
+        }
+
         // ページ切り替え
         function switchPage() {
             if (isClockOnly) {
-                var timestamp = Date.now();
-                frame.contentWindow.location.replace('/clock.html?t=' + timestamp);
+                updateFrame('/clock.html');
                 return;
             }
             currentIndex = (currentIndex + 1) % pages.length;
-            var timestamp = Date.now();
-            frame.contentWindow.location.replace(pages[currentIndex] + '?t=' + timestamp);
+            updateFrame(pages[currentIndex]);
             setTimeout(switchPage, displayDurations[currentIndex]);
         }
 
@@ -104,8 +105,7 @@
             var wasClockOnly = isClockOnly;
             isClockOnly = isClockOnlyTime();
             if (isClockOnly && !wasClockOnly) {
-                var timestamp = Date.now();
-                frame.contentWindow.location.replace('/clock.html?t=' + timestamp);
+                updateFrame('/clock.html');
             } else if (!isClockOnly && wasClockOnly) {
                 currentIndex = -1;
                 switchPage();
@@ -115,21 +115,25 @@
 
         // ring.mp3再生
         function playRing() {
-            if (audioContext && audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
             audio.pause();
             audio.currentTime = 0;
-            var playPromise = audio.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(function() {
-                    // エラー時、短い遅延後に再試行
-                    setTimeout(function() {
-                        if (audioContext) audioContext.resume();
-                        audio.play();
-                    }, 500);
-                });
+            audio.muted = false;
+            audio.volume = 1.0;
+            audio.src = '/ring.mp3?t=' + Date.now();
+            audio.load();
+            let attempts = 0;
+            const maxAttempts = 5;
+            function tryPlay() {
+                attempts++;
+                try {
+                    audio.play();
+                } catch (e) {
+                    if (attempts < maxAttempts) {
+                        setTimeout(tryPlay, 300);
+                    }
+                }
             }
+            tryPlay();
         }
 
         // 次の再生時刻スケジュール
@@ -163,11 +167,8 @@
 
         // 初期化
         function init() {
-            initAudioContext(); // AudioContextを初期化
-            audio.play(); // 初回再生を試みる
             isClockOnly = isClockOnlyTime();
-            var timestamp = Date.now();
-            frame.contentWindow.location.replace(isClockOnly ? '/clock.html?t=' + timestamp : '/weather.html?t=' + timestamp);
+            updateFrame(isClockOnly ? '/clock.html' : '/weather.html');
             if (!isClockOnly) {
                 switchPage();
             }
