@@ -7,7 +7,6 @@
     <meta http-equiv="Expires" content="0">
     <title>デジタル時計</title>
     <style>
-        /* 既存のCSSは変更なし */
         body {
             display: flex;
             justify-content: center;
@@ -22,7 +21,7 @@
             align-items: center;
         }
         #date {
-            width: 310px;
+            width: 310px; /* 8桁×30px + 2ドット×10px + 間隔7×10px = 310px */
             height: 50px;
             display: flex;
             justify-content: space-between;
@@ -41,7 +40,7 @@
             position: relative;
         }
         .date-digit {
-            width: 30px;
+            width: 30px; /* 縦横比0.6に合わせて変更（30px / 50px） */
             height: 50px;
             position: relative;
         }
@@ -71,7 +70,7 @@
         .date-dot-dot {
             width: 5px;
             height: 5px;
-            background-color: white;
+            background-color: white; /* 時刻のコロンと統一 */
             border-radius: 50%;
             margin: 5px 0;
         }
@@ -84,9 +83,9 @@
             stroke-width: 6;
         }
         .date-segment {
-            fill: white;
+            fill: white; /* 時刻数字と同じ白に変更 */
             stroke: white;
-            stroke-width: 6;
+            stroke-width: 6; /* 時刻数字と同じに変更 */
         }
         .segment.off {
             fill: #333333;
@@ -127,37 +126,49 @@
             <div class="digit" id="digit4"></div>
         </div>
     </div>
-    <!-- audioタグを追加 -->
-    <audio id="ring" src="ring.mp3"></audio>
 
     <script>
-        // 時刻用7セグメントSVG（変更なし）
+        // 時刻用7セグメントSVG（高さ200px、間隔10px、gの横幅54ピクセル）
         const segmentSVG = (id) => `
             <svg width="120" height="200" viewBox="0 0 120 210">
+                <!-- セグメントa（上部水平） -->
                 <polygon class="segment" id="${id}-a" points="30,5 90,5 95,10 90,15 30,15 25,10"/>
+                <!-- セグメントb（右上垂直） -->
                 <polygon class="segment" id="${id}-b" points="95,25 100,20 105,25 105,90 100,95 95,90"/>
+                <!-- セグメントc（右下垂直） -->
                 <polygon class="segment" id="${id}-c" points="95,110 100,105 105,110 105,175 100,180 95,175"/>
+                <!-- セグメントd（下部水平） -->
                 <polygon class="segment" id="${id}-d" points="30,195 90,195 95,190 90,185 30,185 25,190"/>
+                <!-- セグメントe（左下垂直） -->
                 <polygon class="segment" id="${id}-e" points="15,110 20,105 25,110 25,175 20,180 15,175"/>
+                <!-- セグメントf（左上垂直） -->
                 <polygon class="segment" id="${id}-f" points="15,25 20,20 25,25 25,90 20,95 15,90"/>
+                <!-- セグメントg（中部水平、横幅70→54ピクセル、センタリング） -->
                 <polygon class="segment" id="${id}-g" points="38,95 82,95 87,100 82,105 38,105 33,100"/>
             </svg>
         `;
 
-        // 日付用7セグメントSVG（変更なし）
+        // 日付用7セグメントSVG（高さ50px、幅30px、縦横比0.6、時刻と同じデザイン）
         const dateSegmentSVG = (id) => `
             <svg width="30" height="50" viewBox="0 0 120 210">
+                <!-- セグメントa（上部水平） -->
                 <polygon class="date-segment" id="${id}-a" points="30,5 90,5 95,10 90,15 30,15 25,10"/>
+                <!-- セグメントb（右上垂直） -->
                 <polygon class="date-segment" id="${id}-b" points="95,25 100,20 105,25 105,90 100,95 95,90"/>
+                <!-- セグメントc（右下垂直） -->
                 <polygon class="date-segment" id="${id}-c" points="95,110 100,105 105,110 105,175 100,180 95,175"/>
+                <!-- セグメントd（下部水平） -->
                 <polygon class="date-segment" id="${id}-d" points="30,195 90,195 95,190 90,185 30,185 25,190"/>
+                <!-- セグメントe（左下垂直） -->
                 <polygon class="date-segment" id="${id}-e" points="15,110 20,105 25,110 25,175 20,180 15,175"/>
+                <!-- セグメントf（左上垂直） -->
                 <polygon class="date-segment" id="${id}-f" points="15,25 20,20 25,25 25,90 20,95 15,90"/>
+                <!-- セグメントg（中部水平） -->
                 <polygon class="date-segment" id="${id}-g" points="38,95 82,95 87,100 82,105 38,105 33,100"/>
             </svg>
         `;
 
-        // 7セグメントの表示パターン（変更なし）
+        // 7セグメントの表示パターン (0-9)
         const patterns = {
             '0': ['a', 'b', 'c', 'd', 'e', 'f'],
             '1': ['b', 'c'],
@@ -171,7 +182,7 @@
             '9': ['a', 'b', 'c', 'd', 'f', 'g']
         };
 
-        // SVGを各桁に設定（変更なし）
+        // SVGを各桁に設定
         ['digit1', 'digit2', 'digit3', 'digit4'].forEach(id => {
             document.getElementById(id).innerHTML = segmentSVG(id.replace('digit', 'd'));
         });
@@ -179,9 +190,10 @@
             document.getElementById(id).innerHTML = dateSegmentSVG(id);
         });
 
-        // ランダムシャッフル表示（変更なし）
+        // ランダムシャッフル表示（1コマ）
         function shuffleSegments() {
             const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+            // 時刻のシャッフル
             ['d1', 'd2', 'd3', 'd4'].forEach(digitId => {
                 segments.forEach(segment => {
                     const element = document.getElementById(`${digitId}-${segment}`);
@@ -198,12 +210,13 @@
                     }
                 });
             });
+            // 日付のシャッフル
             ['date1', 'date2', 'date3', 'date4', 'date5', 'date6', 'date7', 'date8'].forEach(digitId => {
                 segments.forEach(segment => {
                     const element = document.getElementById(`${digitId}-${segment}`);
                     if (element) {
                         if (Math.random() > 0.5) {
-                            element.style.fill = 'white';
+                            element.style.fill = 'white'; /* オレンジから白に変更 */
                             element.style.stroke = 'white';
                             element.classList.remove('off');
                         } else {
@@ -214,31 +227,28 @@
                     }
                 });
             });
+            // コロンとドットのシャッフル
             document.getElementById('colon').classList.toggle('hidden', Math.random() > 0.5);
             document.getElementById('dot1').classList.toggle('hidden', Math.random() > 0.5);
             document.getElementById('dot2').classList.toggle('hidden', Math.random() > 0.5);
         }
 
-        // 音声再生用の変数
-        const audio = document.getElementById('ring');
-        let lastPlayedMinute = null;
-
-        // 時刻と日付の更新（音声再生ロジックを追加）
+        // 時刻と日付の更新
         function updateClock() {
             const now = new Date();
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = now.getSeconds();
             const year = String(now.getFullYear());
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const day = String(now.getDate()).padStart(2, '0');
             const time = hours + minutes;
             const date = year + month + day;
 
-            // 時刻の更新（変更なし）
+            // 時刻の更新
             ['d1', 'd2', 'd3', 'd4'].forEach((digitId, index) => {
                 const digit = time[index];
                 const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+                // 00:00〜09:59のとき、一桁目の「0」を#333で表示
                 if (index === 0 && hours < 10 && digit === '0') {
                     segments.forEach(segment => {
                         const element = document.getElementById(`${digitId}-${segment}`);
@@ -266,7 +276,7 @@
                 }
             });
 
-            // 日付の更新（変更なし）
+            // 日付の更新
             ['date1', 'date2', 'date3', 'date4', 'date5', 'date6', 'date7', 'date8'].forEach((digitId, index) => {
                 const digit = date[index];
                 const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
@@ -274,7 +284,7 @@
                     const element = document.getElementById(`${digitId}-${segment}`);
                     if (element) {
                         if (patterns[digit].includes(segment)) {
-                            element.style.fill = 'white';
+                            element.style.fill = 'white'; /* オレンジから白に変更 */
                             element.style.stroke = 'white';
                             element.classList.remove('off');
                         } else {
@@ -286,25 +296,64 @@
                 });
             });
 
-            // コロンとドットの点滅（変更なし）
+            // コロンとドットの点滅
             const colon = document.getElementById('colon');
             const dot1 = document.getElementById('dot1');
             const dot2 = document.getElementById('dot2');
             colon.classList.toggle('hidden');
             dot1.classList.toggle('hidden');
             dot2.classList.toggle('hidden');
-
-            // 音声再生ロジック
-            const targetHours = [9, 12, 15, 18, 21];
-            const currentHour = now.getHours();
-            const currentMinute = now.getMinutes();
-            const minuteKey = `${currentHour}:${currentMinute}`;
-            
-            if (targetHours.includes(currentHour) && currentMinute === 0 && seconds === 0 && minuteKey !== lastPlayedMinute) {
-                audio.currentTime = 0; // 音声を最初から再生
-                audio.play().catch(error => {
-                    console.error('音声再生エラー:', error);
-                });
-                lastPlayedMinute = minuteKey; // 最後に再生した分を記録
-            }
         }
+
+        // デバッグ用：初期状態で数字「8」を表示（全セグメント点灯）
+        function testDisplay() {
+            ['d1', 'd2', 'd3', 'd4'].forEach(digitId => {
+                const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+                segments.forEach(segment => {
+                    const element = document.getElementById(`${digitId}-${segment}`);
+                    if (element) {
+                        element.style.fill = 'white';
+                        element.style.stroke = 'white';
+                        element.classList.remove('off');
+                    }
+                });
+            });
+            ['date1', 'date2', 'date3', 'date4', 'date5', 'date6', 'date7', 'date8'].forEach(digitId => {
+                const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+                segments.forEach(segment => {
+                    const element = document.getElementById(`${digitId}-${segment}`);
+                    if (element) {
+                        element.style.fill = 'white'; /* オレンジから白に変更 */
+                        element.style.stroke = 'white';
+                        element.classList.remove('off');
+                    }
+                });
+            });
+        }
+
+        // 初期表示テスト
+        testDisplay();
+
+        // シャッフルアニメーションと時計更新
+        let clockInterval;
+        let shuffleCount = 0;
+        const shuffleInterval = setInterval(() => {
+            shuffleSegments();
+            shuffleCount++;
+            if (shuffleCount >= 5) {
+                clearInterval(shuffleInterval);
+                updateClock();
+                clockInterval = setInterval(updateClock, 1000);
+            }
+        }, 100);
+
+        // アンロード時にクリーンアップ
+        window.onunload = () => {
+            if (clockInterval) {
+                clearInterval(clockInterval);
+                console.log('clockIntervalクリア');
+            }
+        };
+    </script>
+</body>
+</html>
