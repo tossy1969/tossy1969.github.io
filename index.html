@@ -22,7 +22,7 @@
 </head>
 <body>
     <iframe id="displayFrame" src="/weather.html"></iframe>
-    <audio id="ringAudio" src="ring.mp3" preload="auto" loop="false"></audio>
+    <audio id="ringAudio" src="/ring.mp3" preload="auto" loop="false"></audio>
 
     <script>
         var frame = document.getElementById('displayFrame');
@@ -32,7 +32,7 @@
         var pages = ['/weather.html', '/clock.html', '/metro.html', '/clock.html'];
         var displayDurations = [30000, 5000, 30000, 5000];
         var ringTimes = ['09:00', '12:00', '15:00', '18:00', '21:00'];
-        var ringTimeout = null; // 音声再生タイマーのハンドル
+        var timers = { switch: null, check: null, ring: null, reload: null }; // タイマー管理
 
         // キャッシュ付き時刻取得
         var cachedTime = null;
@@ -71,13 +71,14 @@
         function isClockOnlyTime() {
             var time = getCachedTime();
             var totalMinutes = time.hours * 60 + time.minutes;
-            var start = 20 * 60; // 20:00 = 1200分
-            var end = 4 * 60 + 50; // 4:50 = 290分
-            return (totalMinutes >= start && totalMinutes < 24 * 60) || (totalMinutes < end);
+            var start = 20 * 60; // 20:00
+            var end = 4 * 60 + 50; // 4:50
+            return (totalMinutes >= start || totalMinutes < end);
         }
 
         // ページ切り替え
         function switchPage() {
+            if (timers.switch) clearTimeout(timers.switch); // 既存のタイマークリア
             if (isClockOnly) {
                 var timestamp = Date.now();
                 frame.src = '/clock.html?t=' + timestamp;
@@ -86,29 +87,31 @@
             currentIndex = (currentIndex + 1) % pages.length;
             var timestamp = Date.now();
             frame.src = pages[currentIndex] + '?t=' + timestamp;
-            setTimeout(switchPage, displayDurations[currentIndex]);
+            timers.switch = setTimeout(switchPage, displayDurations[currentIndex]);
         }
 
         // 時間帯チェック
         function checkTime() {
+            if (timers.check) clearTimeout(timers.check); // 既存のタイマークリア
             var wasClockOnly = isClockOnly;
             isClockOnly = isClockOnlyTime();
             if (isClockOnly && !wasClockOnly) {
+                if (timers.switch) clearTimeout(timers.switch);
                 var timestamp = Date.now();
                 frame.src = '/clock.html?t=' + timestamp;
             } else if (!isClockOnly && wasClockOnly) {
                 currentIndex = -1;
                 switchPage();
             }
-            setTimeout(checkTime, 60 * 1000);
+            timers.check = setTimeout(checkTime, 60 * 1000);
         }
 
         // ring.mp3再生
         function playRing() {
             if (!audio.paused) {
-                audio.pause(); // 再生中なら停止
+                audio.pause();
+                audio.currentTime = 0;
             }
-            audio.currentTime = 0;
             audio.muted = false;
             audio.volume = 1.0;
             audio.src = '/ring.mp3?t=' + Date.now();
@@ -118,8 +121,12 @@
             function tryPlay() {
                 attempts++;
                 try {
-                    if (!audio.paused) return; // 既に再生中の場合スキップ
-                    audio.play();
+                    if (!audio.paused) return;
+                    audio.play().catch(e => {
+                        if (attempts < maxAttempts) {
+                            setTimeout(tryPlay, 300);
+                        }
+                    });
                 } catch (e) {
                     if (attempts < maxAttempts) {
                         setTimeout(tryPlay, 300);
@@ -127,7 +134,6 @@
                 }
             }
             tryPlay();
-            // 再生終了後に状態リセット
             audio.onended = function() {
                 audio.pause();
                 audio.currentTime = 0;
@@ -136,16 +142,13 @@
 
         // 次の再生時刻スケジュール
         function scheduleNextRing() {
-            if (ringTimeout) {
-                clearTimeout(ringTimeout); // 既存のタイマーをクリア
-            }
+            if (timers.ring) clearTimeout(timers.ring); // 既存のタイマークリア
             var now = new Date();
             var currentMinutes = now.getHours() * 60 + now.getMinutes();
-            var ringMinutes = [];
-            for (var i = 0; i < ringTimes.length; i++) {
-                var parts = ringTimes[i].split(':');
-                ringMinutes.push(parseInt(parts[0]) * 60 + parseInt(parts[1]));
-            }
+            var ringMinutes = ringTimes.map(time => {
+                var parts = time.split(':');
+                return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+            });
 
             var nextRing = null;
             for (var i = 0; i < ringMinutes.length; i++) {
@@ -160,7 +163,7 @@
             var minutesToNext = (nextRing - currentMinutes + 24 * 60) % (24 * 60);
             var msToNext = minutesToNext * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
 
-            ringTimeout = setTimeout(function() {
+            timers.ring = setTimeout(function() {
                 playRing();
                 scheduleNextRing();
             }, msToNext);
@@ -168,14 +171,14 @@
 
         // 4:50 と 20:00 にリロードをスケジュール
         function scheduleReload() {
+            if (timers.reload) clearTimeout(timers.reload); // 既存のタイマークリア
             var now = new Date();
             var currentMinutes = now.getHours() * 60 + now.getMinutes();
             var reloadTimes = ['04:50', '20:00'];
-            var reloadMinutes = [];
-            for (var i = 0; i < reloadTimes.length; i++) {
-                var parts = reloadTimes[i].split(':');
-                reloadMinutes.push(parseInt(parts[0]) * 60 + parseInt(parts[1]));
-            }
+            var reloadMinutes = reloadTimes.map(time => {
+                var parts = time.split(':');
+                return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+            });
 
             var nextReload = null;
             for (var i = 0; i < reloadMinutes.length; i++) {
@@ -190,7 +193,11 @@
             var minutesToNext = (nextReload - currentMinutes + 24 * 60) % (24 * 60);
             var msToNext = minutesToNext * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
 
-            setTimeout(function() {
+            timers.reload = setTimeout(function() {
+                // すべてのタイマーをクリア
+                Object.values(timers).forEach(timer => {
+                    if (timer) clearTimeout(timer);
+                });
                 location.reload(true);
             }, msToNext);
         }
@@ -207,6 +214,13 @@
             scheduleNextRing();
             scheduleReload();
         }
+
+        // ページ終了時にタイマークリア
+        window.onbeforeunload = function() {
+            Object.values(timers).forEach(timer => {
+                if (timer) clearTimeout(timer);
+            });
+        };
 
         window.onload = init;
     </script>
