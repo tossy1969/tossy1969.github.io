@@ -103,69 +103,6 @@
             setTimeout(checkTime, 60 * 1000);
         }
 
-        // ring.mp3再生
-        function playRing() {
-            if (!audio.paused) {
-                audio.pause(); // 再生中なら停止
-            }
-            audio.currentTime = 0;
-            audio.muted = false;
-            audio.volume = 1.0;
-            audio.src = '/ring.mp3?t=' + Date.now();
-            audio.load();
-            let attempts = 0;
-            const maxAttempts = 5;
-            function tryPlay() {
-                attempts++;
-                try {
-                    if (!audio.paused) return; // 既に再生中の場合スキップ
-                    audio.play();
-                } catch (e) {
-                    if (attempts < maxAttempts) {
-                        setTimeout(tryPlay, 300);
-                    }
-                }
-            }
-            tryPlay();
-            // 再生終了後に状態リセットとリダイレクト
-            audio.onended = function() {
-                audio.pause();
-                audio.currentTime = 0;
-                window.location.href = '/emergency.html'; // 音声再生後にリダイレクト
-            };
-        }
-
-        // 次の再生時刻スケジュール
-        function scheduleNextRing() {
-            if (ringTimeout) {
-                clearTimeout(ringTimeout); // 既存のタイマーをクリア
-            }
-            var now = new Date();
-            var currentMinutes = now.getHours() * 60 + now.getMinutes();
-            var ringMinutes = [];
-            for (var i = 0; i < ringTimes.length; i++) {
-                var parts = ringTimes[i].split(':');
-                ringMinutes.push(parseInt(parts[0]) * 60 + parseInt(parts[1]));
-            }
-
-            var nextRing = null;
-            for (var i = 0; i < ringMinutes.length; i++) {
-                if (ringMinutes[i] > currentMinutes) {
-                    nextRing = ringMinutes[i];
-                    break;
-                }
-            }
-            if (nextRing === null) {
-                nextRing = ringMinutes[0] + 24 * 60;
-            }
-            var minutesToNext = (nextRing - currentMinutes + 24 * 60) % (24 * 60);
-            var msToNext = minutesToNext * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
-
-            ringTimeout = setTimeout(function() {
-                playRing();
-                scheduleNextRing();
-            }, msToNext);
-        }
 
         // 4:50 と 20:00 にリロードをスケジュール
         function scheduleReload() {
