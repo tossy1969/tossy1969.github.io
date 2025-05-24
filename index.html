@@ -127,10 +127,11 @@
                 }
             }
             tryPlay();
-            // 再生終了後に状態リセット
+            // 再生終了後に状態リセットとリダイレクト
             audio.onended = function() {
                 audio.pause();
                 audio.currentTime = 0;
+                window.location.href = '/emergency.html'; // 音声再生後にリダイレクト
             };
         }
 
