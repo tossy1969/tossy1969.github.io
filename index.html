@@ -32,9 +32,7 @@
         var pages = ['/weather.html', '/clock.html', '/metro.html', '/clock.html'];
         var displayDurations = [30000, 5000, 30000, 5000];
         var ringTimes = ['09:00', '12:00', '15:00', '18:00', '21:00'];
-        var reloadTimes = ['04:50', '20:00'];
-        var ringTimeout = null; // リダイレクトタイマーのハンドル
-        var reloadTimeout = null; // リロードタイマーのハンドル
+        var ringTimeout = null; // 音声再生およびリダイレクトタイマーのハンドル
 
         // キャッシュ付き時刻取得
         var cachedTime = null;
@@ -47,7 +45,7 @@
                 cachedTime = {
                     hours: now.getHours(),
                     minutes: now.getMinutes(),
-                    timeString: now.toTimebegin_of_lineTimeString: now.toTimeString().slice(0, 5),
+                    timeString: now.toTimeString().slice(0, 5),
                     timestamp: now.getTime()
                 };
                 lastTimeUpdate = now;
@@ -130,45 +128,69 @@
 
             if (ringTimeout) clearTimeout(ringTimeout);
             ringTimeout = setTimeout(function() {
-                location.replace('/emergency.html?t=' + Date.now());
+                location.replace('/emergency.html');
             }, msToNext);
         }
 
-        // リダイレクトと切り替え時刻の3秒前にリロードをスケジュール
+        // 4:50 と 20:00 にリロードをスケジュール
         function scheduleReload() {
             var now = new Date();
             var currentMinutes = now.getHours() * 60 + now.getMinutes();
+            var reloadTimes = ['04:50', '20:00'];
+            var reloadMinutes = [];
+            for (var i = 0; i < reloadTimes.length; i++) {
+                var parts = reloadTimes[i].split(':');
+                reloadMinutes.push(parseInt(parts[0]) * 60 + parseInt(parts[1]));
+            }
+
+            var nextReload = null;
+            for (var i = 0; i < reloadMinutes.length; i++) {
+                if (reloadMinutes[i] > currentMinutes) {
+                    nextReload = reloadMinutes[i];
+                    break;
+                }
+            }
+            if (nextReload === null) {
+                nextReload = reloadMinutes[0] + 24 * 60;
+            }
+            var minutesToNext = (nextReload - currentMinutes + 24 * 60) % (24 * 60);
+            var msToNext = minutesToNext * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
+
+            setTimeout(function() {
+                location.reload(true);
+            }, msToNext);
+        }
+
+        // 対象時間の5秒前にリロードをスケジュール
+        function schedulePreemptiveReload() {
+            var now = new Date();
+            var currentMinutes = now.getHours() * 60 + now.getMinutes();
             var currentSeconds = now.getSeconds();
-            var currentMilliseconds = now.getMilliseconds();
-            // リダイレクトと切り替え時刻を統合
-            var allTimes = [...ringTimes, ...reloadTimes];
+            var currentMs = now.getMilliseconds();
+            var allTimes = [...ringTimes, '04:50', '20:00']; // リダイレクトと切り替え時間を統合
             var allMinutes = [];
             for (var i = 0; i < allTimes.length; i++) {
                 var parts = allTimes[i].split(':');
                 allMinutes.push(parseInt(parts[0]) * 60 + parseInt(parts[1]));
             }
 
-            // 次のリロード時刻（3秒前）を計算
             var nextReload = null;
             for (var i = 0; i < allMinutes.length; i++) {
-                var reloadTime = allMinutes[i]; // 対象時刻
-                var reloadTimeInSeconds = reloadTime * 60 - 3; // 3秒前
-                var currentTimeInSeconds = currentMinutes * 60 + currentSeconds;
-                if (reloadTimeInSeconds > currentTimeInSeconds || reloadTimeInSeconds + 24 * 60 * 60 > currentTimeInSeconds) {
-                    nextReload = reloadTimeInSeconds;
+                if (allMinutes[i] * 60 + 5 > currentMinutes * 60 + currentSeconds) {
+                    nextReload = allMinutes[i] * 60 + 5; // 対象時間の5秒前
                     break;
                 }
             }
             if (nextReload === null) {
-                nextReload = (allMinutes[0] * 60 - 3 + 24 * 60 * 60) % (24 * 60 * 60);
+                nextReload = (allMinutes[0] + 24 * 60) * 60 + 5;
             }
-            var secondsToNext = (nextReload - currentTimeInSeconds + 24 * 60 * 60) % (24 * 60 * 60);
-            var msToNext = secondsToNext * 1000 - currentMilliseconds;
+            var secondsToNext = (nextReload - (currentMinutes * 60 + currentSeconds) + 24 * 60 * 60) % (24 * 60 * 60);
+            var msToNext = secondsToNext * 1000 - currentMs;
 
-            if (reloadTimeout) clearTimeout(reloadTimeout);
-            reloadTimeout = setTimeout(function() {
-                location.reload(true); // 強制リロード
-                scheduleReload(); // リロード後に次のリロードをスケジュール
+            setTimeout(function() {
+                location.reload(true);
+                // 次のリロードをスケジュール
+                setTimeout(schedulePreemptiveReload, 1000);
             }, msToNext);
         }
 
@@ -183,6 +205,7 @@
             checkTime();
             scheduleNextRing();
             scheduleReload();
+            schedulePreemptiveReload(); // 5秒前のリロードを追加
         }
 
         window.onload = init;
