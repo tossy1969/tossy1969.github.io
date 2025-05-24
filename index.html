@@ -47,7 +47,7 @@
                 cachedTime = {
                     hours: now.getHours(),
                     minutes: now.getMinutes(),
-                    timeString: now.toTimeString().slice(0, 5),
+                    timeString: now.toTimebegin_of_lineTimeString: now.toTimeString().slice(0, 5),
                     timestamp: now.getTime()
                 };
                 lastTimeUpdate = now;
@@ -130,15 +130,16 @@
 
             if (ringTimeout) clearTimeout(ringTimeout);
             ringTimeout = setTimeout(function() {
-                // リダイレクト実行
                 location.replace('/emergency.html?t=' + Date.now());
             }, msToNext);
         }
 
-        // リダイレクトと切り替え時刻の2分前にリロードをスケジュール
+        // リダイレクトと切り替え時刻の3秒前にリロードをスケジュール
         function scheduleReload() {
             var now = new Date();
             var currentMinutes = now.getHours() * 60 + now.getMinutes();
+            var currentSeconds = now.getSeconds();
+            var currentMilliseconds = now.getMilliseconds();
             // リダイレクトと切り替え時刻を統合
             var allTimes = [...ringTimes, ...reloadTimes];
             var allMinutes = [];
@@ -147,21 +148,22 @@
                 allMinutes.push(parseInt(parts[0]) * 60 + parseInt(parts[1]));
             }
 
-            // 次のリロード時刻（2分前）を計算
+            // 次のリロード時刻（3秒前）を計算
             var nextReload = null;
             for (var i = 0; i < allMinutes.length; i++) {
-                var reloadTime = allMinutes[i] - 2; // 2分前
-                if (reloadTime < 0) reloadTime += 24 * 60; // 0時をまたぐ場合
-                if (reloadTime > currentMinutes || reloadTime + 24 * 60 > currentMinutes) {
-                    nextReload = reloadTime < 0 ? reloadTime + 24 * 60 : reloadTime;
+                var reloadTime = allMinutes[i]; // 対象時刻
+                var reloadTimeInSeconds = reloadTime * 60 - 3; // 3秒前
+                var currentTimeInSeconds = currentMinutes * 60 + currentSeconds;
+                if (reloadTimeInSeconds > currentTimeInSeconds || reloadTimeInSeconds + 24 * 60 * 60 > currentTimeInSeconds) {
+                    nextReload = reloadTimeInSeconds;
                     break;
                 }
             }
             if (nextReload === null) {
-                nextReload = (allMinutes[0] - 2 + 24 * 60) % (24 * 60);
+                nextReload = (allMinutes[0] * 60 - 3 + 24 * 60 * 60) % (24 * 60 * 60);
             }
-            var minutesToNext = (nextReload - currentMinutes + 24 * 60) % (24 * 60);
-            var msToNext = minutesToNext * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
+            var secondsToNext = (nextReload - currentTimeInSeconds + 24 * 60 * 60) % (24 * 60 * 60);
+            var msToNext = secondsToNext * 1000 - currentMilliseconds;
 
             if (reloadTimeout) clearTimeout(reloadTimeout);
             reloadTimeout = setTimeout(function() {
