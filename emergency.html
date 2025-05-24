@@ -21,11 +21,39 @@
 </head>
 <body>
     <img src="emergency.jpg" alt="Emergency Image">
-    <audio autoplay>
+    <audio id="emergencyAudio">
         <source src="ring.mp3" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
     <script>
+        // AudioContextを初期化
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        // 無音音声でコンテキストをウォームアップ
+        const silentBuffer = audioContext.createBuffer(1, 1, 22050);
+        const silentSource = audioContext.createBufferSource();
+        silentSource.buffer = silentBuffer;
+        silentSource.connect(audioContext.destination);
+        silentSource.start();
+
+        // 目的の音声を再生
+        const audioElement = document.getElementById('emergencyAudio');
+        audioElement.play().catch(error => {
+            console.error('音声再生エラー:', error);
+            // フォールバック: AudioContextで直接再生
+            fetch('ring.mp3')
+                .then(response => response.arrayBuffer())
+                .then(data => audioContext.decodeAudioData(data))
+                .then(buffer => {
+                    const source = audioContext.createBufferSource();
+                    source.buffer = buffer;
+                    source.connect(audioContext.destination);
+                    source.start();
+                })
+                .catch(error => console.error('AudioContext再生エラー:', error));
+        });
+
+        // 10秒後にリダイレクト
         setTimeout(() => {
             window.location.href = "index.html";
         }, 10000);
