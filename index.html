@@ -32,7 +32,7 @@
         var pages = ['/weather.html', '/clock.html', '/metro.html', '/clock.html'];
         var displayDurations = [30000, 5000, 30000, 5000];
         var ringTimes = ['09:00', '12:00', '15:00', '18:00', '21:00'];
-        var ringTimeout = null; // 音声再生タイマーのハンドル
+        var ringTimeout = null;
 
         // キャッシュ付き時刻取得
         var cachedTime = null;
@@ -71,8 +71,8 @@
         function isClockOnlyTime() {
             var time = getCachedTime();
             var totalMinutes = time.hours * 60 + time.minutes;
-            var start = 20 * 60; // 20:00 = 1200分
-            var end = 4 * 60 + 50; // 4:50 = 290分
+            var start = 20 * 60;
+            var end = 4 * 60 + 50;
             return (totalMinutes >= start && totalMinutes < 24 * 60) || (totalMinutes < end);
         }
 
@@ -105,9 +105,7 @@
 
         // ring.mp3再生
         function playRing() {
-            if (!audio.paused) {
-                audio.pause(); // 再生中なら停止
-            }
+            audio.pause();
             audio.currentTime = 0;
             audio.muted = false;
             audio.volume = 1.0;
@@ -118,7 +116,6 @@
             function tryPlay() {
                 attempts++;
                 try {
-                    if (!audio.paused) return; // 既に再生中の場合スキップ
                     audio.play();
                 } catch (e) {
                     if (attempts < maxAttempts) {
@@ -127,17 +124,12 @@
                 }
             }
             tryPlay();
-            // 再生終了後に状態リセット
-            audio.onended = function() {
-                audio.pause();
-                audio.currentTime = 0;
-            };
         }
 
         // 次の再生時刻スケジュール
         function scheduleNextRing() {
             if (ringTimeout) {
-                clearTimeout(ringTimeout); // 既存のタイマーをクリア
+                clearTimeout(ringTimeout);
             }
             var now = new Date();
             var currentMinutes = now.getHours() * 60 + now.getMinutes();
