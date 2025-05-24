@@ -29,9 +29,6 @@
         var currentIndex = 0;
         var pages = ['/weather.html', '/clock.html', '/metro.html', '/clock.html'];
         var displayDurations = [30000, 5000, 30000, 5000];
-        var ringTimes = ['09:00', '12:00', '15:00', '18:00', '21:00'];
-        var ringTimeout = null;
-        var currentAudio = null; // 現在の音声要素
 
         // キャッシュ付き時刻取得
         var cachedTime = null;
@@ -102,74 +99,6 @@
             setTimeout(checkTime, 60 * 1000);
         }
 
-        // ring.mp3再生
-        function playRing() {
-            if (currentAudio && !currentAudio.paused) {
-                return; // 再生中の場合はスキップ
-            }
-            currentAudio = document.createElement('audio');
-            currentAudio.src = '/ring.mp3?t=' + Date.now();
-            currentAudio.preload = 'auto';
-            currentAudio.loop = false;
-            currentAudio.muted = false;
-            currentAudio.volume = 1.0;
-            document.body.appendChild(currentAudio);
-            let attempts = 0;
-            const maxAttempts = 5;
-            function tryPlay() {
-                attempts++;
-                try {
-                    currentAudio.play();
-                } catch (e) {
-                    if (attempts < maxAttempts) {
-                        setTimeout(tryPlay, 300);
-                    }
-                }
-            }
-            tryPlay();
-            currentAudio.addEventListener('ended', function() {
-                if (currentAudio) {
-                    document.body.removeChild(currentAudio);
-                    currentAudio = null;
-                }
-            });
-        }
-
-        // 次の再生時刻スケジュール
-        function scheduleNextRing() {
-            if (ringTimeout) {
-                clearTimeout(ringTimeout);
-            }
-            var now = new Date();
-            var currentMinutes = now.getHours() * 60 + now.getMinutes();
-            var ringMinutes = [];
-            for (var i = 0; i < ringTimes.length; i++) {
-                var parts = ringTimes[i].split(':');
-                ringMinutes.push(parseInt(parts[0]) * 60 + parseInt(parts[1]));
-            }
-
-            var nextRing = null;
-            for (var i = 0; i < ringMinutes.length; i++) {
-                if (ringMinutes[i] > currentMinutes) {
-                    nextRing = ringMinutes[i];
-                    break;
-                }
-            }
-            if (nextRing === null) {
-                nextRing = ringMinutes[0] + 24 * 60;
-            }
-            var minutesToNext = (nextRing - currentMinutes + 24 * 60) % (24 * 60);
-            var msToNext = minutesToNext * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
-            if (msToNext < 1000) {
-                msToNext += 24 * 60 * 60 * 1000; // 短い間隔を防ぐ
-            }
-
-            ringTimeout = setTimeout(function() {
-                playRing();
-                scheduleNextRing();
-            }, msToNext);
-        }
-
         // 4:50 と 20:00 にリロードをスケジュール
         function scheduleReload() {
             var now = new Date();
@@ -208,7 +137,6 @@
                 switchPage();
             }
             checkTime();
-            scheduleNextRing();
             scheduleReload();
         }
 
