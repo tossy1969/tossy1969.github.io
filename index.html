@@ -22,13 +22,16 @@
 </head>
 <body>
     <iframe id="displayFrame" src="/weather.html"></iframe>
+    <audio id="ringAudio" src="ring.mp3" preload="auto"></audio>
 
     <script>
         var frame = document.getElementById('displayFrame');
+        var audio = document.getElementById('ringAudio');
         var isClockOnly = false;
         var currentIndex = 0;
         var pages = ['/weather.html', '/clock.html', '/metro.html', '/clock.html'];
         var displayDurations = [30000, 5000, 30000, 5000];
+        var ringTimes = ['09:00', '12:00', '15:00', '18:00', '21:00'];
 
         // キャッシュ付き時刻取得
         var cachedTime = null;
@@ -67,8 +70,8 @@
         function isClockOnlyTime() {
             var time = getCachedTime();
             var totalMinutes = time.hours * 60 + time.minutes;
-            var start = 20 * 60;
-            var end = 4 * 60 + 50;
+            var start = 20 * 60; // 20:00 = 1200分
+            var end = 4 * 60 + 50; // 4:50 = 290分
             return (totalMinutes >= start && totalMinutes < 24 * 60) || (totalMinutes < end);
         }
 
@@ -99,32 +102,53 @@
             setTimeout(checkTime, 60 * 1000);
         }
 
-        // 4:50 と 20:00 にリロードをスケジュール
-        function scheduleReload() {
+        // ring.mp3再生
+        function playRing() {
+            audio.pause();
+            audio.currentTime = 0;
+            audio.muted = false; // ミュート解除
+            audio.volume = 1.0; // 音量を最大に
+            let attempts = 0;
+            const maxAttempts = 3;
+            function tryPlay() {
+                attempts++;
+                try {
+                    audio.play();
+                } catch (e) {
+                    if (attempts < maxAttempts) {
+                        setTimeout(tryPlay, 500); // 0.5秒後にリトライ
+                    }
+                }
+            }
+            tryPlay();
+        }
+
+        // 次の再生時刻スケジュール
+        function scheduleNextRing() {
             var now = new Date();
             var currentMinutes = now.getHours() * 60 + now.getMinutes();
-            var reloadTimes = ['04:50', '20:00'];
-            var reloadMinutes = [];
-            for (var i = 0; i < reloadTimes.length; i++) {
-                var parts = reloadTimes[i].split(':');
-                reloadMinutes.push(parseInt(parts[0]) * 60 + parseInt(parts[1]));
+            var ringMinutes = [];
+            for (var i = 0; i < ringTimes.length; i++) {
+                var parts = ringTimes[i].split(':');
+                ringMinutes.push(parseInt(parts[0]) * 60 + parseInt(parts[1]));
             }
 
-            var nextReload = null;
-            for (var i = 0; i < reloadMinutes.length; i++) {
-                if (reloadMinutes[i] > currentMinutes) {
-                    nextReload = reloadMinutes[i];
+            var nextRing = null;
+            for (var i = 0; i < ringMinutes.length; i++) {
+                if (ringMinutes[i] > currentMinutes) {
+                    nextRing = ringMinutes[i];
                     break;
                 }
             }
-            if (nextReload === null) {
-                nextReload = reloadMinutes[0] + 24 * 60;
+            if (nextRing === null) {
+                nextRing = ringMinutes[0] + 24 * 60;
             }
-            var minutesToNext = (nextReload - currentMinutes + 24 * 60) % (24 * 60);
+            var minutesToNext = (nextRing - currentMinutes + 24 * 60) % (24 * 60);
             var msToNext = minutesToNext * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
 
             setTimeout(function() {
-                location.reload(true);
+                playRing();
+                scheduleNextRing();
             }, msToNext);
         }
 
@@ -137,7 +161,7 @@
                 switchPage();
             }
             checkTime();
-            scheduleReload();
+            scheduleNextRing();
         }
 
         window.onload = init;
