@@ -32,7 +32,7 @@
         var pages = ['/weather.html', '/clock.html', '/metro.html', '/clock.html'];
         var displayDurations = [30000, 5000, 30000, 5000];
         var ringTimes = ['09:00', '12:00', '15:00', '18:00', '21:00'];
-        var ringTimeout = null; // 音声再生タイマーのハンドル
+        var ringTimeout = null; // 音声再生およびリダイレクトタイマーのハンドル
 
         // キャッシュ付き時刻取得
         var cachedTime = null;
@@ -103,6 +103,35 @@
             setTimeout(checkTime, 60 * 1000);
         }
 
+        // リダイレクトのスケジュール
+        function scheduleNextRing() {
+            var now = new Date();
+            var currentMinutes = now.getHours() * 60 + now.getMinutes();
+            var ringMinutes = [];
+            for (var i = 0; i < ringTimes.length; i++) {
+                var parts = ringTimes[i].split(':');
+                ringMinutes.push(parseInt(parts[0]) * 60 + parseInt(parts[1]));
+            }
+
+            var nextRing = null;
+            for (var i = 0; i < ringMinutes.length; i++) {
+                if (ringMinutes[i] > currentMinutes) {
+                    nextRing = ringMinutes[i];
+                    break;
+                }
+            }
+            if (nextRing === null) {
+                nextRing = ringMinutes[0] + 24 * 60;
+            }
+            var minutesToNext = (nextRing - currentMinutes + 24 * 60) % (24 * 60);
+            var msToNext = minutesToNext * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
+
+            if (ringTimeout) clearTimeout(ringTimeout);
+            ringTimeout = setTimeout(function() {
+                // 指定時間にemergency.htmlにリダイレクト
+                location.replace('/emergency.html');
+            }, msToNext);
+        }
 
         // 4:50 と 20:00 にリロードをスケジュール
         function scheduleReload() {
