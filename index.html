@@ -22,9 +22,11 @@
 </head>
 <body>
     <iframe id="displayFrame" src="/weather.html"></iframe>
+    <audio id="ringAudio" src="ring.mp3" preload="auto" loop="false"></audio>
 
     <script>
         var frame = document.getElementById('displayFrame');
+        var audio = document.getElementById('ringAudio');
         var isClockOnly = false;
         var currentIndex = 0;
         var pages = ['/weather.html', '/clock.html', '/metro.html', '/clock.html'];
@@ -103,18 +105,20 @@
 
         // ring.mp3再生
         function playRing() {
-            var audio = document.createElement('audio');
-            audio.src = '/ring.mp3?t=' + Date.now();
-            audio.preload = 'auto';
-            audio.loop = false;
+            if (!audio.paused) {
+                audio.pause(); // 再生中なら停止
+            }
+            audio.currentTime = 0;
             audio.muted = false;
             audio.volume = 1.0;
-            document.body.appendChild(audio);
+            audio.src = '/ring.mp3?t=' + Date.now();
+            audio.load();
             let attempts = 0;
             const maxAttempts = 5;
             function tryPlay() {
                 attempts++;
                 try {
+                    if (!audio.paused) return; // 既に再生中の場合スキップ
                     audio.play();
                 } catch (e) {
                     if (attempts < maxAttempts) {
@@ -123,16 +127,17 @@
                 }
             }
             tryPlay();
-            // 再生終了後、要素を削除
-            audio.addEventListener('ended', function() {
-                document.body.removeChild(audio);
-            });
+            // 再生終了後に状態リセット
+            audio.onended = function() {
+                audio.pause();
+                audio.currentTime = 0;
+            };
         }
 
         // 次の再生時刻スケジュール
         function scheduleNextRing() {
             if (ringTimeout) {
-                clearTimeout(ringTimeout);
+                clearTimeout(ringTimeout); // 既存のタイマーをクリア
             }
             var now = new Date();
             var currentMinutes = now.getHours() * 60 + now.getMinutes();
