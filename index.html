@@ -135,7 +135,7 @@
             }, msToNext);
         }
 
-        // リダイレクトと切り替え時刻の1分前にリロードをスケジュール
+        // リダイレクトと切り替え時刻の2分前にリロードをスケジュール
         function scheduleReload() {
             var now = new Date();
             var currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -147,10 +147,10 @@
                 allMinutes.push(parseInt(parts[0]) * 60 + parseInt(parts[1]));
             }
 
-            // 次のリロード時刻（1分前）を計算
+            // 次のリロード時刻（2分前）を計算
             var nextReload = null;
             for (var i = 0; i < allMinutes.length; i++) {
-                var reloadTime = allMinutes[i] - 1; // 1分前
+                var reloadTime = allMinutes[i] - 2; // 2分前
                 if (reloadTime < 0) reloadTime += 24 * 60; // 0時をまたぐ場合
                 if (reloadTime > currentMinutes || reloadTime + 24 * 60 > currentMinutes) {
                     nextReload = reloadTime < 0 ? reloadTime + 24 * 60 : reloadTime;
@@ -158,7 +158,7 @@
                 }
             }
             if (nextReload === null) {
-                nextReload = (allMinutes[0] - 1 + 24 * 60) % (24 * 60);
+                nextReload = (allMinutes[0] - 2 + 24 * 60) % (24 * 60);
             }
             var minutesToNext = (nextReload - currentMinutes + 24 * 60) % (24 * 60);
             var msToNext = minutesToNext * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
