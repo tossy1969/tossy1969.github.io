@@ -3,41 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>非常口</title>
+    <title>Emergency Display</title>
     <style>
         body {
             margin: 0;
             padding: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #008000; /* イラストの緑色 */
             overflow: hidden;
         }
-        svg {
-            width: 50%;
-            height: auto;
+        img {
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            display: block;
+        }
+        audio {
+            display: none;
         }
     </style>
 </head>
 <body>
-    <!-- SVGイラスト -->
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 150">
-        <!-- 背景全体 -->
-        <rect x="0" y="0" width="300" height="150" fill="#008000"/>
-        <!-- ドア部分 -->
-        <rect x="30" y="20" width="80" height="110" fill="white"/>
-        <!-- 人のシルエット -->
-        <path d="M90,40 A10,10 0 0,1 110,40 A10,10 0 0,1 90,40 Z M100,50 L100,80 L120,80 L130,100 L110,100 L100,90 Z" fill="#008000"/>
-        <!-- 矢印 -->
-        <polygon points="170,50 250,50 250,30 300,75 250,120 250,100 170,100" fill="white"/>
-    </svg>
-
-    <!-- 音声再生 -->
+    <img src="emergency.jpg" alt="Emergency Image">
     <audio autoplay>
         <source src="ring.mp3" type="audio/mpeg">
-        お使いのブラウザはaudio要素をサポートしていません。
+        Your browser does not support the audio element.
     </audio>
 </body>
 </html>
