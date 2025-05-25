@@ -21,10 +21,6 @@
 </head>
 <body>
     <img src="emergency.jpg" alt="Emergency Image">
-    <audio id="emergencyAudio" autoplay>
-        <source src="ring.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
     <script>
         // 現在時刻を取得
         const now = new Date();
@@ -45,11 +41,18 @@
             hours === time.hour && minutes === time.minute
         );
 
-        // 一致しない場合はaudio要素を非表示（再生しない）
-        const audioElement = document.getElementById('emergencyAudio');
-        if (!isTargetTime) {
-            audioElement.style.display = 'none';
-            audioElement.pause();
+        // 対象時刻の場合に音声を強制再生
+        if (isTargetTime) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            fetch('ring.mp3')
+                .then(response => response.arrayBuffer())
+                .then(data => audioContext.decodeAudioData(data))
+                .then(buffer => {
+                    const source = audioContext.createBufferSource();
+                    source.buffer = buffer;
+                    source.connect(audioContext.destination);
+                    source.start(0);
+                });
         }
     </script>
 </body>
