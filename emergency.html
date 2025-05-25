@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <title>Emergency Display</title>
     <style>
         body, html {
@@ -13,47 +12,13 @@
             overflow: hidden;
         }
         img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+            width: 700px;
+            height: auto;
+            display: block;
         }
     </style>
 </head>
 <body>
     <img src="emergency.jpg" alt="Emergency Image">
-    <audio id="emergencyAudio">
-        <source src="ring.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
-    <script>
-        // AudioContextを初期化
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-        // 無音音声でコンテキストをウォームアップ
-        const silentBuffer = audioContext.createBuffer(1, 1, 22050);
-        const silentSource = audioContext.createBufferSource();
-        silentSource.buffer = silentBuffer;
-        silentSource.connect(audioContext.destination);
-        silentSource.start();
-
-        // 目的の音声を再生
-        const audioElement = document.getElementById('emergencyAudio');
-        audioElement.play().catch(error => {
-            console.error('音声再生エラー:', error);
-            // フォールバック: AudioContextで直接再生
-            fetch('ring.mp3')
-                .then(response => response.arrayBuffer())
-                .then(data => audioContext.decodeAudioData(data))
-                .then(buffer => {
-                    const source = audioContext.createBufferSource();
-                    source.buffer = buffer;
-                    source.connect(audioContext.destination);
-                    source.start();
-                })
-                .catch(error => console.error('AudioContext再生エラー:', error));
-        });
-
-
-    </script>
 </body>
 </html>
