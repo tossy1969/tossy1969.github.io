@@ -21,5 +21,36 @@
 </head>
 <body>
     <img src="emergency.jpg" alt="Emergency Image">
+    <audio id="emergencyAudio" autoplay>
+        <source src="ring.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    <script>
+        // 現在時刻を取得
+        const now = new Date();
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
+
+        // 対象時刻（時:分）のリスト
+        const targetTimes = [
+            { hour: 9, minute: 0 },
+            { hour: 12, minute: 0 },
+            { hour: 15, minute: 0 },
+            { hour: 18, minute: 0 },
+            { hour: 21, minute: 0 }
+        ];
+
+        // 現在時刻が対象時刻と一致するかチェック
+        const isTargetTime = targetTimes.some(time => 
+            hours === time.hour && minutes === time.minute
+        );
+
+        // 一致しない場合はaudio要素を非表示（再生しない）
+        const audioElement = document.getElementById('emergencyAudio');
+        if (!isTargetTime) {
+            audioElement.style.display = 'none';
+            audioElement.pause();
+        }
+    </script>
 </body>
 </html>
