@@ -166,34 +166,6 @@
             }, msToNext);
         }
 
-        // 4:50 と 20:00 にリロードをスケジュール
-        function scheduleReload() {
-            var now = new Date();
-            var currentMinutes = now.getHours() * 60 + now.getMinutes();
-            var reloadTimes = ['04:50', '20:00'];
-            var reloadMinutes = [];
-            for (var i = 0; i < reloadTimes.length; i++) {
-                var parts = reloadTimes[i].split(':');
-                reloadMinutes.push(parseInt(parts[0]) * 60 + parseInt(parts[1]));
-            }
-
-            var nextReload = null;
-            for (var i = 0; i < reloadMinutes.length; i++) {
-                if (reloadMinutes[i] > currentMinutes) {
-                    nextReload = reloadMinutes[i];
-                    break;
-                }
-            }
-            if (nextReload === null) {
-                nextReload = reloadMinutes[0] + 24 * 60;
-            }
-            var minutesToNext = (nextReload - currentMinutes + 24 * 60) % (24 * 60);
-            var msToNext = minutesToNext * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
-
-            setTimeout(function() {
-                location.reload(true);
-            }, msToNext);
-        }
 
         // 初期化
         function init() {
