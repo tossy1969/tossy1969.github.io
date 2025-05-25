@@ -32,7 +32,9 @@
         var pages = ['/weather.html', '/clock.html', '/metro.html', '/clock.html'];
         var displayDurations = [30000, 5000, 30000, 5000];
         var ringTimes = ['09:00', '12:00', '15:00', '18:00', '21:00'];
-        var ringTimeout = null; // 音声再生およびリダイレクトタイマーのハンドル
+        var ringTimeout = null;
+        var isShowingEmergency = false; // emergency.html表示中フラグ
+        var lastPage = null; // 元のページを保持
 
         // キャッシュ付き時刻取得
         var cachedTime = null;
@@ -78,15 +80,36 @@
 
         // ページ切り替え
         function switchPage() {
-            if (isClockOnly) {
+            if (isClockOnly || isShowingEmergency) {
                 var timestamp = Date.now();
-                frame.src = '/clock.html?t=' + timestamp;
+                frame.src = isClockOnly ? '/clock.html?t=' + timestamp : frame.src;
                 return;
             }
             currentIndex = (currentIndex + 1) % pages.length;
             var timestamp = Date.now();
+            lastPage = pages[currentIndex]; // 現在のページを保存
             frame.src = pages[currentIndex] + '?t=' + timestamp;
             setTimeout(switchPage, displayDurations[currentIndex]);
+        }
+
+        // emergency.htmlを表示
+        function showEmergency() {
+            if (isShowingEmergency) return;
+            isShowingEmergency = true;
+            lastPage = frame.src.split('?')[0]; // 現在のページを保存
+            var timestamp = Date.now();
+            frame.src = '/emergency.html?t=' + timestamp;
+            setTimeout(returnToOriginalPage, 15000); // 15秒後に元のページに戻る
+        }
+
+        // 元のページに戻る
+        function returnToOriginalPage() {
+            isShowingEmergency = false;
+            var timestamp = Date.now();
+            frame.src = lastPage + '?t=' + timestamp;
+            if (!isClockOnly) {
+                setTimeout(switchPage, displayDurations[currentIndex]);
+            }
         }
 
         // 時間帯チェック
@@ -96,14 +119,14 @@
             if (isClockOnly && !wasClockOnly) {
                 var timestamp = Date.now();
                 frame.src = '/clock.html?t=' + timestamp;
-            } else if (!isClockOnly && wasClockOnly) {
+            } else if (!isClockOnly && wasClockOnly && !isShowingEmergency) {
                 currentIndex = -1;
                 switchPage();
             }
             setTimeout(checkTime, 60 * 1000);
         }
 
-        // リダイレクトのスケジュール
+        // ringTimesのスケジュール
         function scheduleNextRing() {
             var now = new Date();
             var currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -126,9 +149,17 @@
             var minutesToNext = (nextRing - currentMinutes + 24 * 60) % (24 * 60);
             var msToNext = minutesToNext * 60 * 1000 - now.getSeconds() * 1000 - now.getMilliseconds();
 
-            if (ringTimeout) clearTimeout(ringTimeout);
+            // 5秒前にリロード
+            if (msToNext >= 5000) {
+                setTimeout(function() {
+                    location.reload(true);
+                }, msToNext - 5000);
+            }
+
+            // 指定時間にemergency.htmlを表示
             ringTimeout = setTimeout(function() {
-                location.replace('/emergency.html');
+                showEmergency();
+                scheduleNextRing();
             }, msToNext);
         }
 
@@ -161,51 +192,18 @@
             }, msToNext);
         }
 
-        // 対象時間の5秒前にリロードをスケジュール
-        function schedulePreemptiveReload() {
-            var now = new Date();
-            var currentMinutes = now.getHours() * 60 + now.getMinutes();
-            var currentSeconds = now.getSeconds();
-            var currentMs = now.getMilliseconds();
-            var allTimes = [...ringTimes, '04:50', '20:00']; // リダイレクトと切り替え時間を統合
-            var allMinutes = [];
-            for (var i = 0; i < allTimes.length; i++) {
-                var parts = allTimes[i].split(':');
-                allMinutes.push(parseInt(parts[0]) * 60 + parseInt(parts[1]));
-            }
-
-            var nextReload = null;
-            for (var i = 0; i < allMinutes.length; i++) {
-                if (allMinutes[i] * 60 + 5 > currentMinutes * 60 + currentSeconds) {
-                    nextReload = allMinutes[i] * 60 + 5; // 対象時間の5秒前
-                    break;
-                }
-            }
-            if (nextReload === null) {
-                nextReload = (allMinutes[0] + 24 * 60) * 60 + 5;
-            }
-            var secondsToNext = (nextReload - (currentMinutes * 60 + currentSeconds) + 24 * 60 * 60) % (24 * 60 * 60);
-            var msToNext = secondsToNext * 1000 - currentMs;
-
-            setTimeout(function() {
-                location.reload(true);
-                // 次のリロードをスケジュール
-                setTimeout(schedulePreemptiveReload, 1000);
-            }, msToNext);
-        }
-
         // 初期化
         function init() {
             isClockOnly = isClockOnlyTime();
             var timestamp = Date.now();
             frame.src = isClockOnly ? '/clock.html?t=' + timestamp : '/weather.html?t=' + timestamp;
+            lastPage = frame.src.split('?')[0];
             if (!isClockOnly) {
                 switchPage();
             }
             checkTime();
             scheduleNextRing();
             scheduleReload();
-            schedulePreemptiveReload(); // 5秒前のリロードを追加
         }
 
         window.onload = init;
