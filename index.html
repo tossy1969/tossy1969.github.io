@@ -21,51 +21,49 @@
     </style>
 </head>
 <body>
-    <iframe id="displayFrame" src="/weather.html"></iframe>
+    <iframe id="displayFrame" src="/clock.html"></iframe>
 
     <script>
         var frame = document.getElementById('displayFrame');
         var currentIndex = 0;
-        var pages = ['/weather.html', '/clock.html', '/metro.html', '/clock.html'];
-        var displayDurations = [30000, 5000, 30000, 5000];
+        var pages = ['/clock.html', '/metro.html', '/clock.html', '/weather.html', '/emergency.html'];
+        var displayDurations = [5000, 30000, 5000, 30000, 5000];
         var isOffline = !navigator.onLine;
-        var switchTimeout = null;
 
         // ページ切り替え
         function switchPage() {
             if (isOffline) {
-                var timestamp = Date.now();
-                frame.src = '/clock.html?t=' + timestamp;
+                frame.src = '/clock.html?t=' + Date.now();
                 return;
             }
             currentIndex = (currentIndex + 1) % pages.length;
-            var timestamp = Date.now();
-            frame.src = pages[currentIndex] + '?t=' + timestamp;
-            switchTimeout = setTimeout(switchPage, displayDurations[currentIndex]);
+            frame.src = pages[currentIndex] + '?t=' + Date.now();
+            setTimeout(switchPage, displayDurations[currentIndex]);
         }
 
-        // ネットワーク状態の監視
-        function handleNetworkChange() {
+        // オンライン/オフライン状態のチェック
+        function checkNetworkStatus() {
+            var wasOffline = isOffline;
             isOffline = !navigator.onLine;
-            if (isOffline) {
-                clearTimeout(switchTimeout); // ページ切り替えを停止
-                var timestamp = Date.now();
-                frame.src = '/clock.html?t=' + timestamp;
-            } else {
-                currentIndex = -1; // リセットして最初から
-                switchPage(); // ページ切り替えを再開
+            if (isOffline && !wasOffline) {
+                frame.src = '/clock.html?t=' + Date.now();
+            } else if (!isOffline && wasOffline) {
+                currentIndex = -1; // 次回のswitchPageで0から開始
+                switchPage();
             }
         }
+
+        // ネットワークイベントリスナーの設定
+        window.addEventListener('online', checkNetworkStatus);
+        window.addEventListener('offline', checkNetworkStatus);
 
         // 初期化
         function init() {
-            var timestamp = Date.now();
-            frame.src = isOffline ? '/clock.html?t=' + timestamp : '/weather.html?t=' + timestamp;
             if (!isOffline) {
                 switchPage();
+            } else {
+                frame.src = '/clock.html?t=' + Date.now();
             }
-            window.addEventListener('online', handleNetworkChange);
-            window.addEventListener('offline', handleNetworkChange);
         }
 
         window.onload = init;
