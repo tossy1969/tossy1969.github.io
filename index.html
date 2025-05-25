@@ -28,20 +28,44 @@
         var currentIndex = 0;
         var pages = ['/weather.html', '/clock.html', '/metro.html', '/clock.html'];
         var displayDurations = [30000, 5000, 30000, 5000];
+        var isOffline = !navigator.onLine;
+        var switchTimeout = null;
 
         // ページ切り替え
         function switchPage() {
+            if (isOffline) {
+                var timestamp = Date.now();
+                frame.src = '/clock.html?t=' + timestamp;
+                return;
+            }
             currentIndex = (currentIndex + 1) % pages.length;
             var timestamp = Date.now();
             frame.src = pages[currentIndex] + '?t=' + timestamp;
-            setTimeout(switchPage, displayDurations[currentIndex]);
+            switchTimeout = setTimeout(switchPage, displayDurations[currentIndex]);
+        }
+
+        // ネットワーク状態の監視
+        function handleNetworkChange() {
+            isOffline = !navigator.onLine;
+            if (isOffline) {
+                clearTimeout(switchTimeout); // ページ切り替えを停止
+                var timestamp = Date.now();
+                frame.src = '/clock.html?t=' + timestamp;
+            } else {
+                currentIndex = -1; // リセットして最初から
+                switchPage(); // ページ切り替えを再開
+            }
         }
 
         // 初期化
         function init() {
             var timestamp = Date.now();
-            frame.src = '/weather.html?t=' + timestamp;
-            setTimeout(switchPage, displayDurations[0]);
+            frame.src = isOffline ? '/clock.html?t=' + timestamp : '/weather.html?t=' + timestamp;
+            if (!isOffline) {
+                switchPage();
+            }
+            window.addEventListener('online', handleNetworkChange);
+            window.addEventListener('offline', handleNetworkChange);
         }
 
         window.onload = init;
