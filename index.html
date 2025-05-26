@@ -29,6 +29,19 @@
         var pages = ['/clock.html', '/metro.html', '/clock.html', '/weather.html', '/emergency.html'];
         var displayDurations = [10000, 30000, 10000, 30000, 10000];
         var isOffline = !navigator.onLine;
+        var rotationTimer = null; // ローテーション用タイマー
+        var isPaused = false; // ローテーション停止フラグ
+
+        // 時刻チェック関数
+        function isPauseTime() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const currentTime = hours * 60 + minutes;
+            const pauseStart = 0 * 60 + 30; // 0:30
+            const pauseEnd = 4 * 60 + 30; // 4:30
+            return currentTime >= pauseStart && currentTime < pauseEnd;
+        }
 
         // ページ切り替え
         function switchPage() {
@@ -36,9 +49,29 @@
                 frame.src = '/clock.html?t=' + Date.now();
                 return;
             }
-            currentIndex = (currentIndex + 1) % pages.length;
-            frame.src = pages[currentIndex] + '?t=' + Date.now();
-            setTimeout(switchPage, displayDurations[currentIndex]);
+            if (!isPaused) {
+                currentIndex = (currentIndex + 1) % pages.length;
+                frame.src = pages[currentIndex] + '?t=' + Date.now();
+                rotationTimer = setTimeout(switchPage, displayDurations[currentIndex]);
+            }
+        }
+
+        // タイマー制御
+        function manageTimer() {
+            const wasPaused = isPaused;
+            isPaused = isPauseTime();
+
+            if (isPaused && !wasPaused) {
+                // 0:30～4:30に入った：ローテーション停止、clock.html表示
+                clearTimeout(rotationTimer);
+                rotationTimer = null;
+                frame.src = '/clock.html?t=' + Date.now();
+                currentIndex = pages.indexOf('/clock.html'); // 次回再開時にclock.htmlの次から
+            } else if (!isPaused && wasPaused) {
+                // 4:30を過ぎた：ローテーション再開
+                currentIndex = pages.indexOf('/clock.html'); // clock.htmlから再開
+                switchPage();
+            }
         }
 
         // オンライン/オフライン状態のチェック
@@ -46,9 +79,26 @@
             var wasOffline = isOffline;
             isOffline = !navigator.onLine;
             if (isOffline && !wasOffline) {
+                clearTimeout(rotationTimer);
+                rotationTimer = null;
                 frame.src = '/clock.html?t=' + Date.now();
-            } else if (!isOffline && wasOffline) {
+                isPaused = true; // オフライン中はローテーション停止
+            } else if (!isOffline && wasOffline && !isPauseTime()) {
+                isPaused = false;
                 currentIndex = -1; // 次回のswitchPageで0から開始
+                switchPage();
+            }
+        }
+
+        // 初期化
+        function init() {
+            // 1分ごとに時刻をチェック
+            setInterval(manageTimer, 60000);
+            // 初期状態をチェック
+            isPaused = isPauseTime();
+            if (isOffline || isPaused) {
+                frame.src = '/clock.html?t=' + Date.now();
+            } else {
                 switchPage();
             }
         }
@@ -56,15 +106,6 @@
         // ネットワークイベントリスナーの設定
         window.addEventListener('online', checkNetworkStatus);
         window.addEventListener('offline', checkNetworkStatus);
-
-        // 初期化
-        function init() {
-            if (!isOffline) {
-                switchPage();
-            } else {
-                frame.src = '/clock.html?t=' + Date.now();
-            }
-        }
 
         window.onload = init;
     </script>
