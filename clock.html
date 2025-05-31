@@ -190,121 +190,6 @@
             document.getElementById(id).innerHTML = dateSegmentSVG(id);
         });
 
-        // ランダムシャッフル表示（1コマ）
-        function shuffleSegments() {
-            const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
-            // 時刻のシャッフル
-            ['d1', 'd2', 'd3', 'd4'].forEach(digitId => {
-                segments.forEach(segment => {
-                    const element = document.getElementById(`${digitId}-${segment}`);
-                    if (element) {
-                        if (Math.random() > 0.5) {
-                            element.style.fill = 'white';
-                            element.style.stroke = 'white';
-                            element.classList.remove('off');
-                        } else {
-                            element.style.fill = '#333333';
-                            element.style.stroke = '#333333';
-                            element.classList.add('off');
-                        }
-                    }
-                });
-            });
-            // 日付のシャッフル
-            ['date1', 'date2', 'date3', 'date4', 'date5', 'date6', 'date7', 'date8'].forEach(digitId => {
-                segments.forEach(segment => {
-                    const element = document.getElementById(`${digitId}-${segment}`);
-                    if (element) {
-                        if (Math.random() > 0.5) {
-                            element.style.fill = 'white'; /* オレンジから白に変更 */
-                            element.style.stroke = 'white';
-                            element.classList.remove('off');
-                        } else {
-                            element.style.fill = '#333333';
-                            element.style.stroke = '#333333';
-                            element.classList.add('off');
-                        }
-                    }
-                });
-            });
-            // コロンとドットのシャッフル
-            document.getElementById('colon').classList.toggle('hidden', Math.random() > 0.5);
-            document.getElementById('dot1').classList.toggle('hidden', Math.random() > 0.5);
-            document.getElementById('dot2').classList.toggle('hidden', Math.random() > 0.5);
-        }
-
-        // 時刻と日付の更新
-        function updateClock() {
-            const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const year = String(now.getFullYear());
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const time = hours + minutes;
-            const date = year + month + day;
-
-            // 時刻の更新
-            ['d1', 'd2', 'd3', 'd4'].forEach((digitId, index) => {
-                const digit = time[index];
-                const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
-                // 00:00〜09:59のとき、一桁目の「0」を#333で表示
-                if (index === 0 && hours < 10 && digit === '0') {
-                    segments.forEach(segment => {
-                        const element = document.getElementById(`${digitId}-${segment}`);
-                        if (element) {
-                            element.style.fill = '#333333';
-                            element.style.stroke = '#333333';
-                            element.classList.add('off');
-                        }
-                    });
-                } else {
-                    segments.forEach(segment => {
-                        const element = document.getElementById(`${digitId}-${segment}`);
-                        if (element) {
-                            if (patterns[digit].includes(segment)) {
-                                element.style.fill = 'white';
-                                element.style.stroke = 'white';
-                                element.classList.remove('off');
-                            } else {
-                                element.style.fill = '#333333';
-                                element.style.stroke = '#333333';
-                                element.classList.add('off');
-                            }
-                        }
-                    });
-                }
-            });
-
-            // 日付の更新
-            ['date1', 'date2', 'date3', 'date4', 'date5', 'date6', 'date7', 'date8'].forEach((digitId, index) => {
-                const digit = date[index];
-                const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
-                segments.forEach(segment => {
-                    const element = document.getElementById(`${digitId}-${segment}`);
-                    if (element) {
-                        if (patterns[digit].includes(segment)) {
-                            element.style.fill = 'white'; /* オレンジから白に変更 */
-                            element.style.stroke = 'white';
-                            element.classList.remove('off');
-                        } else {
-                            element.style.fill = '#333333';
-                            element.style.stroke = '#333333';
-                            element.classList.add('off');
-                        }
-                    }
-                });
-            });
-
-            // コロンとドットの点滅
-            const colon = document.getElementById('colon');
-            const dot1 = document.getElementById('dot1');
-            const dot2 = document.getElementById('dot2');
-            colon.classList.toggle('hidden');
-            dot1.classList.toggle('hidden');
-            dot2.classList.toggle('hidden');
-        }
-
         // デバッグ用：初期状態で数字「8」を表示（全セグメント点灯）
         function testDisplay() {
             ['d1', 'd2', 'd3', 'd4'].forEach(digitId => {
@@ -323,7 +208,7 @@
                 segments.forEach(segment => {
                     const element = document.getElementById(`${digitId}-${segment}`);
                     if (element) {
-                        element.style.fill = 'white'; /* オレンジから白に変更 */
+                        element.style.fill = 'white';
                         element.style.stroke = 'white';
                         element.classList.remove('off');
                     }
@@ -331,28 +216,101 @@
             });
         }
 
-        // 初期表示テスト
-        testDisplay();
+        // 時刻と日付の更新（差分更新）
+        let lastTime = '';
+        let lastDate = '';
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const year = String(now.getFullYear());
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const time = hours + minutes;
+            const date = year + month + day;
 
-        // シャッフルアニメーションと時計更新
-        let clockInterval;
-        let shuffleCount = 0;
-        const shuffleInterval = setInterval(() => {
-            shuffleSegments();
-            shuffleCount++;
-            if (shuffleCount >= 5) {
-                clearInterval(shuffleInterval);
-                updateClock();
-                clockInterval = setInterval(updateClock, 1000);
-            }
-        }, 100);
+            // 時刻の差分更新
+            ['d1', 'd2', 'd3', 'd4'].forEach((digitId, index) => {
+                if (time[index] !== lastTime[index]) {
+                    const digit = time[index];
+                    const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+                    if (index === 0 && hours < 10 && digit === '0') {
+                        segments.forEach(segment => {
+                            const element = document.getElementById(`${digitId}-${segment}`);
+                            if (element) {
+                                element.style.fill = '#333333';
+                                element.style.stroke = '#333333';
+                                element.classList.add('off');
+                            }
+                        });
+                    } else {
+                        segments.forEach(segment => {
+                            const element = document.getElementById(`${digitId}-${segment}`);
+                            if (element) {
+                                if (patterns[digit].includes(segment)) {
+                                    element.style.fill = 'white';
+                                    element.style.stroke = 'white';
+                                    element.classList.remove('off');
+                                } else {
+                                    element.style.fill = '#333333';
+                                    element.style.stroke = '#333333';
+                                    element.classList.add('off');
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+
+            // 日付の差分更新
+            ['date1', 'date2', 'date3', 'date4', 'date5', 'date6', 'date7', 'date8'].forEach((digitId, index) => {
+                if (date[index] !== lastDate[index]) {
+                    const digit = date[index];
+                    const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+                    segments.forEach(segment => {
+                        const element = document.getElementById(`${digitId}-${segment}`);
+                        if (element) {
+                            if (patterns[digit].includes(segment)) {
+                                element.style.fill = 'white';
+                                element.style.stroke = 'white';
+                                element.classList.remove('off');
+                            } else {
+                                element.style.fill = '#333333';
+                                element.style.stroke = '#333333';
+                                element.classList.add('off');
+                            }
+                        }
+                    });
+                }
+            });
+
+            lastTime = time;
+            lastDate = date;
+
+            // コロンとドットの点滅（現状維持）
+            document.getElementById('colon').classList.toggle('hidden');
+            document.getElementById('dot1').classList.toggle('hidden');
+            document.getElementById('dot2').classList.toggle('hidden');
+        }
+
+        // 初期表示
+        testDisplay();
+        updateClock();
+
+        // 時刻更新（1分ごと）
+        const clockInterval = setInterval(updateClock, 60000);
+
+        // コロン/ドット点滅用（1秒ごと）
+        const colonInterval = setInterval(() => {
+            document.getElementById('colon').classList.toggle('hidden');
+            document.getElementById('dot1').classList.toggle('hidden');
+            document.getElementById('dot2').classList.toggle('hidden');
+        }, 1000);
 
         // アンロード時にクリーンアップ
         window.onunload = () => {
-            if (clockInterval) {
-                clearInterval(clockInterval);
-                console.log('clockIntervalクリア');
-            }
+            clearInterval(clockInterval);
+            clearInterval(colonInterval);
         };
     </script>
 </body>
