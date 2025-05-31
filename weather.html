@@ -2,12 +2,12 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>東京中野 24時間天気予報</title>
-       <style>
+    <style>
         body {
             font-family: Arial, sans-serif;
             background-color: #e0e0e0;
@@ -84,13 +84,12 @@
             width: 4px;
             height: 4px;
             border-radius: 50%;
-            background-color: #ffffff;
-        }
-        .rain-dot.blue {
-            background-color: #add8e6;
+            background-color: #ffffff; /* 水色を削除し白色に統一 */
+            will-change: transform, opacity; /* GPUアクセラレーション */
         }
         .rain-dot {
             animation: fall linear infinite;
+            animation-duration: 1.5s; /* アニメーション時間を延長 */
         }
         @keyframes fall {
             0% {
@@ -107,7 +106,8 @@
             color: #333;
             margin-top: -8px;
             font-weight: normal;
-            transition: opacity 0.3s ease;
+            transition: none; /* トランジション無効化 */
+            will-change: opacity; /* GPUアクセラレーション */
         }
         .time.fade {
             opacity: 0;
@@ -132,6 +132,7 @@
             }
             .rain-dot {
                 animation: fall linear infinite;
+                animation-duration: 1.5s; /* アニメーション時間を延長 */
             }
             @keyframes fall {
                 0% {
@@ -278,12 +279,10 @@
                 for (let i = 0; i < 10; i++) {
                     const dot = document.createElement('span');
                     dot.className = 'rain-dot';
-                    if (i % 2 === 0) {
-                        dot.classList.add('blue');
-                    }
+                    // 水色ドットは削除（白色のみ）
                     dot.style.left = `${Math.random() * 100}%`;
                     dot.style.animationDelay = `${Math.random()}s`;
-                    dot.style.animationDuration = `${0.5 + Math.random()}s`;
+                    dot.style.animationDuration = `${1.5 + Math.random() * 0.5}s`; /* 1.5秒以上に延長 */
                     rainDots.appendChild(dot);
                 }
             });
@@ -317,6 +316,7 @@
         }
 
         // 天気データを取得して更新
+        let lastIcons = {}; // アイコン状態を追跡
         function fetchWeather(retryCount = 0) {
             const maxRetries = 3;
             const cacheBuster = generateUUID();
@@ -366,7 +366,10 @@
                             const time = item.time;
                             const displayHour = formatHour(hour);
                             const temperature = `${item.temperature}℃`;
-                            cell.querySelector('img').src = `https://openweathermap.org/img/wn/${icon}@2x.png?cb=${cacheBuster}`;
+                            // キャッシュバスターを条件付きで適用
+                            const cacheBusterParam = lastIcons[index] !== icon ? `?cb=${cacheBuster}` : '';
+                            cell.querySelector('img').src = `https://openweathermap.org/img/wn/${icon}@2x.png${cacheBusterParam}`;
+                            lastIcons[index] = icon; // アイコン状態を保存
                             cell.querySelector('img').alt = item.weathercode in weatherCodeMap ? '天気' : '不明';
                             cell.querySelector('img').style.display = 'block';
                             cell.querySelector('.weather-icon-placeholder').classList.add('hidden');
@@ -389,12 +392,9 @@
                                     for (let i = 0; i < 10; i++) {
                                         const dot = document.createElement('span');
                                         dot.className = 'rain-dot';
-                                        if (i % 2 === 0) {
-                                            dot.classList.add('blue');
-                                        }
                                         dot.style.left = `${Math.random() * 100}%`;
                                         dot.style.animationDelay = `${Math.random()}s`;
-                                        dot.style.animationDuration = `${0.5 + Math.random()}s`;
+                                        dot.style.animationDuration = `${1.5 + Math.random() * 0.5}s`; /* 1.5秒以上に延長 */
                                         rainDots.appendChild(dot);
                                     }
                                 }
