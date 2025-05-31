@@ -45,18 +45,18 @@
         }
 
         // ページ切り替え
-        function switchPage() {
-            if (isOffline) {
-                frame.src = '/clock.html?t=' + Date.now();
-                return;
-            }
-            if (!isPaused) {
-                currentIndex = (currentIndex + 1) % pages.length;
-                frame.src = pages[currentIndex] + '?t=' + Date.now();
-                rotationTimer = setTimeout(switchPage, displayDurations[currentIndex]);
-            }
-        }
-
+function switchPage() {
+    if (isOffline) {
+        frame.src = '/clock.html';
+        return;
+    }
+    if (!isPaused) {
+        currentIndex = (currentIndex + 1) % pages.length;
+        frame.src = pages[currentIndex] + (pages[currentIndex] === '/weather.html' ? '' : '?t=' + Date.now());
+        rotationTimer = setTimeout(switchPage, displayDurations[currentIndex]);
+    }
+}
+    
         // タイマー制御
         function manageTimer() {
             const wasPaused = isPaused;

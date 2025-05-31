@@ -2,7 +2,6 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -84,12 +83,13 @@
             width: 4px;
             height: 4px;
             border-radius: 50%;
-            background-color: #ffffff; /* 水色を削除し白色に統一 */
-            will-change: transform, opacity; /* GPUアクセラレーション */
+            background-color: #ffffff;
+        }
+        .rain-dot.blue {
+            background-color: #add8e6;
         }
         .rain-dot {
             animation: fall linear infinite;
-            animation-duration: 1.5s; /* アニメーション時間を延長 */
         }
         @keyframes fall {
             0% {
@@ -106,8 +106,7 @@
             color: #333;
             margin-top: -8px;
             font-weight: normal;
-            transition: none; /* トランジション無効化 */
-            will-change: opacity; /* GPUアクセラレーション */
+            transition: opacity 0.3s ease;
         }
         .time.fade {
             opacity: 0;
@@ -132,7 +131,6 @@
             }
             .rain-dot {
                 animation: fall linear infinite;
-                animation-duration: 1.5s; /* アニメーション時間を延長 */
             }
             @keyframes fall {
                 0% {
@@ -200,7 +198,7 @@
     </table>
 
     <script>
-        // UUID生成関数（キャッシュバスター用）
+        // UUID生成関数（キャッシュバスター用、今回は使用しないが保持）
         function generateUUID() {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                 const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -279,10 +277,12 @@
                 for (let i = 0; i < 10; i++) {
                     const dot = document.createElement('span');
                     dot.className = 'rain-dot';
-                    // 水色ドットは削除（白色のみ）
+                    if (i % 2 === 0) {
+                        dot.classList.add('blue');
+                    }
                     dot.style.left = `${Math.random() * 100}%`;
                     dot.style.animationDelay = `${Math.random()}s`;
-                    dot.style.animationDuration = `${1.5 + Math.random() * 0.5}s`; /* 1.5秒以上に延長 */
+                    dot.style.animationDuration = `${0.5 + Math.random()}s`;
                     rainDots.appendChild(dot);
                 }
             });
@@ -297,7 +297,7 @@
             return startHour;
         }
 
-        // 時刻と気温を3秒ごとに切り替え
+        // 時刻と気温を5秒ごとに切り替え
         function toggleTimeAndTemperature() {
             const cells = document.querySelectorAll('td');
             const showTemperature = document.body.classList.toggle('show-temperature');
@@ -316,16 +316,14 @@
         }
 
         // 天気データを取得して更新
-        let lastIcons = {}; // アイコン状態を追跡
         function fetchWeather(retryCount = 0) {
             const maxRetries = 3;
-            const cacheBuster = generateUUID();
             const today = new Date();
             const tomorrow = new Date(today);
             tomorrow.setDate(today.getDate() + 1);
             const startDate = today.toISOString().split('T')[0];
             const endDate = tomorrow.toISOString().split('T')[0];
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=35.7076&longitude=139.6637&hourly=weathercode,temperature_2m&timezone=Asia%2FTokyo&start_date=${startDate}&end_date=${endDate}&cache_buster=${cacheBuster}`;
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=35.7076&longitude=139.6637&hourly=weathercode,temperature_2m&timezone=Asia%2FTokyo&start_date=${startDate}&end_date=${endDate}`;
 
             fetch(url)
                 .then(response => {
@@ -366,10 +364,7 @@
                             const time = item.time;
                             const displayHour = formatHour(hour);
                             const temperature = `${item.temperature}℃`;
-                            // キャッシュバスターを条件付きで適用
-                            const cacheBusterParam = lastIcons[index] !== icon ? `?cb=${cacheBuster}` : '';
-                            cell.querySelector('img').src = `https://openweathermap.org/img/wn/${icon}@2x.png${cacheBusterParam}`;
-                            lastIcons[index] = icon; // アイコン状態を保存
+                            cell.querySelector('img').src = `https://openweathermap.org/img/wn/${icon}@2x.png`;
                             cell.querySelector('img').alt = item.weathercode in weatherCodeMap ? '天気' : '不明';
                             cell.querySelector('img').style.display = 'block';
                             cell.querySelector('.weather-icon-placeholder').classList.add('hidden');
@@ -392,9 +387,12 @@
                                     for (let i = 0; i < 10; i++) {
                                         const dot = document.createElement('span');
                                         dot.className = 'rain-dot';
+                                        if (i % 2 === 0) {
+                                            dot.classList.add('blue');
+                                        }
                                         dot.style.left = `${Math.random() * 100}%`;
                                         dot.style.animationDelay = `${Math.random()}s`;
-                                        dot.style.animationDuration = `${1.5 + Math.random() * 0.5}s`; /* 1.5秒以上に延長 */
+                                        dot.style.animationDuration = `${0.5 + Math.random()}s`;
                                         rainDots.appendChild(dot);
                                     }
                                 }
@@ -453,7 +451,6 @@
             cell.querySelector('.time').textContent = displayHour;
             cell.dataset.hour = displayHour;
             cell.dataset.temperature = '--℃';
-            // 初期状態では背景色を設定しない（デフォルトは#fff）
         });
 
         // 初回データ取得
@@ -462,8 +459,8 @@
         // 10分ごとにデータ更新
         setInterval(fetchWeather, 10 * 60 * 1000);
 
-        // 3秒ごとに時刻と気温を切り替え
-        setInterval(toggleTimeAndTemperature, 3000);
+        // 5秒ごとに時刻と気温を切り替え
+        setInterval(toggleTimeAndTemperature, 5000);
     </script>
 </body>
 </html>
