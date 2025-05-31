@@ -31,6 +31,7 @@
         var isOffline = !navigator.onLine;
         var rotationTimer = null; // ローテーション用タイマー
         var isPaused = false; // ローテーション停止フラグ
+        var lastReload = 0; // リロード時刻の追跡
 
         // 時刻チェック関数
         function isPauseTime() {
@@ -66,6 +67,7 @@
                 clearTimeout(rotationTimer);
                 rotationTimer = null;
                 frame.src = '/clock.html?t=' + Date.now();
+                lastReload = Date.now(); // リロード時刻を更新
                 currentIndex = pages.indexOf('/clock.html'); // 次回再開時にclock.htmlの次から
             } else if (!isPaused && wasPaused) {
                 // 4:30を過ぎた：ローテーション再開
@@ -76,19 +78,25 @@
 
         // オンライン/オフライン状態のチェック
         function checkNetworkStatus() {
+            const now = Date.now();
             var wasOffline = isOffline;
             isOffline = !navigator.onLine;
-            if (isOffline && !wasOffline) {
+            if (isOffline && !wasOffline && now - lastReload > 60000) { // 1分以内のリロードを抑制
                 clearTimeout(rotationTimer);
                 rotationTimer = null;
-                frame.src = '/clock.html?t=' + Date.now();
-                isPaused = true; // オフライン中はローテーション停止
+                frame.src = '/clock.html?t=' + now;
+                lastReload = now; // リロード時刻を更新
+                isPaused = true;
             } else if (!isOffline && wasOffline && !isPauseTime()) {
                 isPaused = false;
                 currentIndex = -1; // 次回のswitchPageで0から開始
                 switchPage();
             }
         }
+
+        // ネットワークイベントリスナーの設定
+        window.addEventListener('online', checkNetworkStatus);
+        window.addEventListener('offline', checkNetworkStatus);
 
         // 初期化
         function init() {
@@ -98,14 +106,11 @@
             isPaused = isPauseTime();
             if (isOffline || isPaused) {
                 frame.src = '/clock.html?t=' + Date.now();
+                lastReload = Date.now(); // 初期リロード時刻を更新
             } else {
                 switchPage();
             }
         }
-
-        // ネットワークイベントリスナーの設定
-        window.addEventListener('online', checkNetworkStatus);
-        window.addEventListener('offline', checkNetworkStatus);
 
         window.onload = init;
     </script>
