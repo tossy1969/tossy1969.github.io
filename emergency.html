@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="public, max-age=86400"> <!-- キャッシュを1日有効 -->
+    <meta http-equiv="Pragma" content="cache">
+    <meta http-equiv="Expires" content="86400">
     <title>Emergency Display</title>
     <style>
         body, html {
@@ -16,12 +19,24 @@
         img {
             width: 700px;
             height: auto;
+            display: block; /* 画像の余白防止 */
         }
     </style>
 </head>
 <body>
-    <img src="emergency.jpg" alt="Emergency Image">
+    <img src="emergency.jpg" alt="Emergency Image" onload="preloadAudio()">
     <script>
+        // ring.mp3を事前読み込みしてキャッシュ
+        function preloadAudio() {
+            const preloadFetch = new Request('ring.mp3', {
+                method: 'GET',
+                cache: 'force-cache' // キャッシュがあれば使用、なければ取得
+            });
+            fetch(preloadFetch).catch(() => {
+                // 読み込み失敗時もエラーを無視（再生時に再試行）
+            });
+        }
+
         // 現在時刻を取得
         const now = new Date();
         const hours = now.getHours();
@@ -41,17 +56,44 @@
             hours === time.hour && minutes === time.minute
         );
 
-        // 対象時刻の場合に音声を強制再生
+        // 対象時刻の場合に音声を再生
         if (isTargetTime) {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            fetch('ring.mp3')
-                .then(response => response.arrayBuffer())
+            const audioFetch = new Request('ring.mp3', {
+                method: 'GET',
+                cache: 'force-cache' // キャッシュ優先
+            });
+            fetch(audioFetch)
+                .then(response => {
+                    if (!response.ok) throw new Error('Audio fetch failed');
+                    return response.arrayBuffer();
+                })
                 .then(data => audioContext.decodeAudioData(data))
                 .then(buffer => {
                     const source = audioContext.createBufferSource();
                     source.buffer = buffer;
                     source.connect(audioContext.destination);
                     source.start(0);
+                })
+                .catch(() => {
+                    // ネットワークエラー時、キャッシュから再試行
+                    const cacheFetch = new Request('ring.mp3', {
+                        method: 'GET',
+                        cache: 'only-if-cached', // キャッシュのみ
+                        mode: 'same-origin'
+                    });
+                    fetch(cacheFetch)
+                        .then(response => response.arrayBuffer())
+                        .then(data => audioContext.decodeAudioData(data))
+                        .then(buffer => {
+                            const source = audioContext.createBufferSource();
+                            source.buffer = buffer;
+                            source.connect(audioContext.destination);
+                            source.start(0);
+                        })
+                        .catch(() => {
+                            // キャッシュも失敗した場合、何もしない
+                        });
                 });
         }
     </script>
