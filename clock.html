@@ -2,9 +2,9 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Cache-Control" content="public, max-age=86400"> <!-- キャッシュを1日有効 -->
+    <meta http-equiv="Pragma" content="cache">
+    <meta http-equiv="Expires" content="86400">
     <title>デジタル時計</title>
     <style>
         body {
@@ -40,7 +40,7 @@
             position: relative;
         }
         .date-digit {
-            width: 30px; /* 縦横比0.6に合わせて変更（30px / 50px） */
+            width: 30px;
             height: 50px;
             position: relative;
         }
@@ -70,7 +70,7 @@
         .date-dot-dot {
             width: 5px;
             height: 5px;
-            background-color: white; /* 時刻のコロンと統一 */
+            background-color: white;
             border-radius: 50%;
             margin: 5px 0;
         }
@@ -83,9 +83,9 @@
             stroke-width: 6;
         }
         .date-segment {
-            fill: white; /* 時刻数字と同じ白に変更 */
+            fill: white;
             stroke: white;
-            stroke-width: 6; /* 時刻数字と同じに変更 */
+            stroke-width: 6;
         }
         .segment.off {
             fill: #333333;
@@ -128,42 +128,28 @@
     </div>
 
     <script>
-        // 時刻用7セグメントSVG（高さ200px、間隔10px、gの横幅54ピクセル）
+        // 時刻用7セグメントSVG
         const segmentSVG = (id) => `
             <svg width="120" height="200" viewBox="0 0 120 210">
-                <!-- セグメントa（上部水平） -->
                 <polygon class="segment" id="${id}-a" points="30,5 90,5 95,10 90,15 30,15 25,10"/>
-                <!-- セグメントb（右上垂直） -->
                 <polygon class="segment" id="${id}-b" points="95,25 100,20 105,25 105,90 100,95 95,90"/>
-                <!-- セグメントc（右下垂直） -->
                 <polygon class="segment" id="${id}-c" points="95,110 100,105 105,110 105,175 100,180 95,175"/>
-                <!-- セグメントd（下部水平） -->
                 <polygon class="segment" id="${id}-d" points="30,195 90,195 95,190 90,185 30,185 25,190"/>
-                <!-- セグメントe（左下垂直） -->
                 <polygon class="segment" id="${id}-e" points="15,110 20,105 25,110 25,175 20,180 15,175"/>
-                <!-- セグメントf（左上垂直） -->
                 <polygon class="segment" id="${id}-f" points="15,25 20,20 25,25 25,90 20,95 15,90"/>
-                <!-- セグメントg（中部水平、横幅70→54ピクセル、センタリング） -->
                 <polygon class="segment" id="${id}-g" points="38,95 82,95 87,100 82,105 38,105 33,100"/>
             </svg>
         `;
 
-        // 日付用7セグメントSVG（高さ50px、幅30px、縦横比0.6、時刻と同じデザイン）
+        // 日付用7セグメントSVG
         const dateSegmentSVG = (id) => `
             <svg width="30" height="50" viewBox="0 0 120 210">
-                <!-- セグメントa（上部水平） -->
                 <polygon class="date-segment" id="${id}-a" points="30,5 90,5 95,10 90,15 30,15 25,10"/>
-                <!-- セグメントb（右上垂直） -->
                 <polygon class="date-segment" id="${id}-b" points="95,25 100,20 105,25 105,90 100,95 95,90"/>
-                <!-- セグメントc（右下垂直） -->
                 <polygon class="date-segment" id="${id}-c" points="95,110 100,105 105,110 105,175 100,180 95,175"/>
-                <!-- セグメントd（下部水平） -->
                 <polygon class="date-segment" id="${id}-d" points="30,195 90,195 95,190 90,185 30,185 25,190"/>
-                <!-- セグメントe（左下垂直） -->
                 <polygon class="date-segment" id="${id}-e" points="15,110 20,105 25,110 25,175 20,180 15,175"/>
-                <!-- セグメントf（左上垂直） -->
                 <polygon class="date-segment" id="${id}-f" points="15,25 20,20 25,25 25,90 20,95 15,90"/>
-                <!-- セグメントg（中部水平） -->
                 <polygon class="date-segment" id="${id}-g" points="38,95 82,95 87,100 82,105 38,105 33,100"/>
             </svg>
         `;
@@ -189,32 +175,6 @@
         ['date1', 'date2', 'date3', 'date4', 'date5', 'date6', 'date7', 'date8'].forEach(id => {
             document.getElementById(id).innerHTML = dateSegmentSVG(id);
         });
-
-        // デバッグ用：初期状態で数字「8」を表示（全セグメント点灯）
-        function testDisplay() {
-            ['d1', 'd2', 'd3', 'd4'].forEach(digitId => {
-                const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
-                segments.forEach(segment => {
-                    const element = document.getElementById(`${digitId}-${segment}`);
-                    if (element) {
-                        element.style.fill = 'white';
-                        element.style.stroke = 'white';
-                        element.classList.remove('off');
-                    }
-                });
-            });
-            ['date1', 'date2', 'date3', 'date4', 'date5', 'date6', 'date7', 'date8'].forEach(digitId => {
-                const segments = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
-                segments.forEach(segment => {
-                    const element = document.getElementById(`${digitId}-${segment}`);
-                    if (element) {
-                        element.style.fill = 'white';
-                        element.style.stroke = 'white';
-                        element.classList.remove('off');
-                    }
-                });
-            });
-        }
 
         // 時刻と日付の更新（差分更新）
         let lastTime = '';
@@ -287,14 +247,13 @@
             lastTime = time;
             lastDate = date;
 
-            // コロンとドットの点滅（現状維持）
+            // コロンとドットの点滅
             document.getElementById('colon').classList.toggle('hidden');
             document.getElementById('dot1').classList.toggle('hidden');
             document.getElementById('dot2').classList.toggle('hidden');
         }
 
         // 初期表示
-        testDisplay();
         updateClock();
 
         // 時刻更新（1分ごと）

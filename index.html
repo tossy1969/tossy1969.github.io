@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Cache-Control" content="public, max-age=86400"> <!-- キャッシュを1日有効 -->
+    <meta http-equiv="Pragma" content="cache">
+    <meta http-equiv="Expires" content="86400">
     <title>Dynamic Display</title>
     <style>
         body {
@@ -29,9 +29,9 @@
         var pages = ['/clock.html', '/metro.html', '/clock.html', '/weather.html', '/emergency.html'];
         var displayDurations = [10000, 30000, 10000, 30000, 10000];
         var isOffline = !navigator.onLine;
-        var rotationTimer = null; // ローテーション用タイマー
-        var isPaused = false; // ローテーション停止フラグ
-        var lastReload = 0; // リロード時刻の追跡
+        var rotationTimer = null;
+        var isPaused = false;
+        var lastReload = 0;
 
         // 時刻チェック関数
         function isPauseTime() {
@@ -45,33 +45,58 @@
         }
 
         // ページ切り替え
-function switchPage() {
-    if (isOffline) {
-        frame.src = '/clock.html';
-        return;
-    }
-    if (!isPaused) {
-        currentIndex = (currentIndex + 1) % pages.length;
-        frame.src = pages[currentIndex] + (pages[currentIndex] === '/weather.html' ? '' : '?t=' + Date.now());
-        rotationTimer = setTimeout(switchPage, displayDurations[currentIndex]);
-    }
-}
-    
+        function switchPage() {
+            if (isOffline) {
+                const now = Date.now();
+                if (now - lastReload > 60000) {
+                    fetch('/clock.html', { cache: 'only-if-cached', mode: 'same-origin' })
+                        .then(() => {
+                            frame.src = '/clock.html';
+                            lastReload = now;
+                        })
+                        .catch(() => {
+                            // キャッシュがない場合、リロードスキップ
+                        });
+                }
+                return;
+            }
+            if (!isPaused) {
+                currentIndex = (currentIndex + 1) % pages.length;
+                frame.src = pages[currentIndex] + (navigator.onLine ? '?t=' + Date.now() : '');
+                lastReload = Date.now();
+                rotationTimer = setTimeout(switchPage, displayDurations[currentIndex]);
+            }
+        }
+
         // タイマー制御
         function manageTimer() {
             const wasPaused = isPaused;
             isPaused = isPauseTime();
+            const now = Date.now();
 
             if (isPaused && !wasPaused) {
                 // 0:30～4:30に入った：ローテーション停止、clock.html表示
                 clearTimeout(rotationTimer);
                 rotationTimer = null;
-                frame.src = '/clock.html?t=' + Date.now();
-                lastReload = Date.now(); // リロード時刻を更新
-                currentIndex = pages.indexOf('/clock.html'); // 次回再開時にclock.htmlの次から
+                if (isOffline) {
+                    if (now - lastReload > 60000) {
+                        fetch('/clock.html', { cache: 'only-if-cached', mode: 'same-origin' })
+                            .then(() => {
+                                frame.src = '/clock.html';
+                                lastReload = now;
+                            })
+                            .catch(() => {
+                                // キャッシュがない場合、リロードスキップ
+                            });
+                    }
+                } else {
+                    frame.src = '/clock.html' + (navigator.onLine ? '?t=' + now : '');
+                    lastReload = now;
+                }
+                currentIndex = pages.indexOf('/clock.html');
             } else if (!isPaused && wasPaused) {
                 // 4:30を過ぎた：ローテーション再開
-                currentIndex = pages.indexOf('/clock.html'); // clock.htmlから再開
+                currentIndex = pages.indexOf('/clock.html');
                 switchPage();
             }
         }
@@ -81,15 +106,21 @@ function switchPage() {
             const now = Date.now();
             var wasOffline = isOffline;
             isOffline = !navigator.onLine;
-            if (isOffline && !wasOffline && now - lastReload > 60000) { // 1分以内のリロードを抑制
+            if (isOffline && !wasOffline && now - lastReload > 60000) {
                 clearTimeout(rotationTimer);
                 rotationTimer = null;
-                frame.src = '/clock.html?t=' + now;
-                lastReload = now; // リロード時刻を更新
+                fetch('/clock.html', { cache: 'only-if-cached', mode: 'same-origin' })
+                    .then(() => {
+                        frame.src = '/clock.html';
+                        lastReload = now;
+                    })
+                    .catch(() => {
+                        // キャッシュがない場合、リロードスキップ
+                    });
                 isPaused = true;
             } else if (!isOffline && wasOffline && !isPauseTime()) {
                 isPaused = false;
-                currentIndex = -1; // 次回のswitchPageで0から開始
+                currentIndex = -1;
                 switchPage();
             }
         }
@@ -100,13 +131,19 @@ function switchPage() {
 
         // 初期化
         function init() {
-            // 1分ごとに時刻をチェック
             setInterval(manageTimer, 60000);
-            // 初期状態をチェック
             isPaused = isPauseTime();
+            const now = Date.now();
             if (isOffline || isPaused) {
-                frame.src = '/clock.html?t=' + Date.now();
-                lastReload = Date.now(); // 初期リロード時刻を更新
+                fetch('/clock.html', { cache: 'only-if-cached', mode: 'same-origin' })
+                    .then(() => {
+                        frame.src = '/clock.html';
+                        lastReload = now;
+                    })
+                    .catch(() => {
+                        frame.src = '/clock.html' + (navigator.onLine ? '?t=' + now : '');
+                        lastReload = now;
+                    });
             } else {
                 switchPage();
             }
